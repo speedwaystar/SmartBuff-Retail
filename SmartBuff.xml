@@ -76,25 +76,25 @@
 			</OnMouseUp>
 			<OnDragStart>
 				if(SmartBuffOptionsFrame:IsVisible()) then
-					SMARTBUFF_Splash_ChangeFont(1);
+					SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 					self:StartMoving();
 				end
 			</OnDragStart>
 			<OnDragStop>
 				if(SmartBuffOptionsFrame:IsVisible()) then
 					SMARTBUFF_Splash_ChangePos();
-					SMARTBUFF_Splash_ChangeFont(1);
+					SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 					self:StopMovingOrSizing();
 				end
 			</OnDragStop>
 			<OnEnter>
 				if(SmartBuffOptionsFrame:IsVisible()) then
-					SMARTBUFF_Splash_ChangeFont(1);
+					SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 				end
 			</OnEnter>
 			<OnLeave>
 				if(SmartBuffOptionsFrame:IsVisible()) then
-					SMARTBUFF_Splash_ChangeFont(1);
+					SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 				end
 			</OnLeave>
 		</Scripts>
@@ -127,7 +127,7 @@
 				</Anchors>
 				<Scripts>
 					<OnClick>
-						SMARTBUFF_Splash_ChangeFont(2);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_UI_BUSY);
 					</OnClick>
 					<OnEnter>
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
@@ -173,7 +173,7 @@
 						SmartBuff_SetSliderText(self, SMARTBUFF_OFT_FONTSIZE, n, "%d");
 						f:SetFont(fName, n, fFlags)
 						o.CurrentFontSize = n;
-						SMARTBUFF_Splash_ChangeFont(1);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 						end
 					</OnValueChanged>
 				</Scripts>
@@ -206,7 +206,7 @@
 						if (o and o.SplashIconSize ~= n) then
 						SmartBuff_SetSliderText(self, SMARTBUFF_OFT_ICONSIZE, n, "%d");
 						o.SplashIconSize = n;
-						SMARTBUFF_Splash_ChangeFont(1);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 						end
 					</OnValueChanged>
 				</Scripts>
@@ -238,7 +238,7 @@
 						local o = SMARTBUFF_OptionsGlobal;
 						if (o) then
 						o.SplashIcon = not o.SplashIcon;
-						SMARTBUFF_Splash_ChangeFont(1);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 						end
 					</OnClick>
 				</Scripts>
@@ -270,7 +270,7 @@
 						local o = SMARTBUFF_OptionsGlobal;
 						if (o) then
 						o.SplashMsgShort = not o.SplashMsgShort;
-						SMARTBUFF_Splash_ChangeFont(1);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 						end
 					</OnClick>
 				</Scripts>
@@ -295,14 +295,14 @@
 					<OnColorSelect>
 						local o = SMARTBUFF_Options;
 						local r, g, b = self:GetColorRGB();
-						if (o and (r ~= o.ColSplashFont.r or g ~= o.ColSplashFont.g or b ~= o.ColSplashFont.r)) then
+						if (o and (r ~= o.ColSplashFont.r or g ~= o.ColSplashFont.g or b ~= o.ColSplashFont.b)) then
 						o.ColSplashFont.r = r;
 						o.ColSplashFont.g = g;
 						o.ColSplashFont.b = b;
 						end;
 					</OnColorSelect>
 					<OnMouseUp>
-						SMARTBUFF_Splash_ChangeFont(1);
+						SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 					</OnMouseUp>
 				</Scripts>
 				<ColorWheelTexture name="$parentPickerWheel">
@@ -346,12 +346,12 @@
 			</OnHide>
 			<OnEnter>
 				if(self:IsVisible()) then
-				SMARTBUFF_Splash_ChangeFont(1);
+				SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 				end
 			</OnEnter>
 			<OnLeave>
 				if(self:IsVisible()) then
-				SMARTBUFF_Splash_ChangeFont(1);
+				SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_REBUFF_CHECK);
 				end
 			</OnLeave>
 		</Scripts>
@@ -449,7 +449,8 @@
 				self:SetAttribute("target-slot", nil);
 			</OnLoad>
 			<OnDragStart>
-				if (button == "LeftButton" and IsShiftKeyDown()) then
+				<!-- if (button == "LeftButton" and IsShiftKeyDown()) then -->
+				if (button == "LeftButton") then
 					self:StartMoving();
 				end
 			</OnDragStart>
@@ -1724,7 +1725,7 @@
 				<Scripts>
 					<OnEnter>
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-						SmartBuff_BuffSetup_ToolTip(1);
+						SmartBuff_BuffSetup_ToolTip(Enum.State.STATE_REBUFF_CHECK);
 					</OnEnter>
 					<OnLeave>
 						GameTooltip:Hide();
@@ -1746,7 +1747,7 @@
 				<Scripts>
 					<OnEnter>
 						GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
-						SmartBuff_BuffSetup_ToolTip(2);
+						SmartBuff_BuffSetup_ToolTip(Enum.State.STATE_UI_BUSY);
 					</OnEnter>
 					<OnLeave>
 						GameTooltip:Hide();

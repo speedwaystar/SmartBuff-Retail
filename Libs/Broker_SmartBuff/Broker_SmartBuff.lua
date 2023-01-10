@@ -11,7 +11,7 @@ local F = CreateFrame("Frame", "Broker_SmartBuff");
 
 function SMARTBUFF_BROKER_SetIcon()
   if (not F.LS) then return end
-  if (SMARTBUFF_Options and SMARTBUFF_Options.Toggle) then
+  if (SMARTBUFF_Options and SMARTBUFF_Options.SmartBuff_Enabled) then
     F.LS.icon = "Interface\\AddOns\\SmartBuff\\Icons\\IconEnabled";
   else
     F.LS.icon = "Interface\\AddOns\\SmartBuff\\Icons\\IconDisabled";
@@ -23,14 +23,14 @@ F.LS = LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("SmartBuff", {
 	label = SMARTBUFF_TITLE,
 	OnClick = function(_, msg)
     if (msg == "RightButton") then
-      SMARTBUFF_OToggle();
+      SMARTBUFF_OToggleBuff();
 	  SMARTBUFF_BROKER_SetIcon();	-- bug fix, credit: SunNova
     elseif (msg == "LeftButton" and IsAltKeyDown()) then
       if (IsAddOnLoaded("SmartDebuff")) then
         SMARTDEBUFF_ToggleSF();
-      end      
+      end
     elseif (msg == "LeftButton") then
-      SMARTBUFF_OptionsFrame_Toggle();          
+      SMARTBUFF_OptionsFrame_Toggle();
     end
 	end,
 	icon = "Interface\\AddOns\\SmartBuff\\Icons\\IconDisabled",

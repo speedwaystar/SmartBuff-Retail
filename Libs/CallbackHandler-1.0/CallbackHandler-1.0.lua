@@ -26,6 +26,7 @@ local function Dispatch(handlers, ...)
 	local index, method = next(handlers)
 	if not method then return end
 	repeat
+---@diagnostic disable-next-line: redundant-parameter
 		xpcall(method, errorhandler, ...)
 		index, method = next(handlers, index)
 	until not method
@@ -74,6 +75,7 @@ function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAll
 					-- fire OnUsed callback?
 					if first and registry.OnUsed then
 						registry.OnUsed(registry, target, eventname)
+---@diagnostic disable-next-line: cast-local-type
 						first = nil
 					end
 				end

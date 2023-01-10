@@ -2,8 +2,10 @@
 -- Globals
 -------------------------------------------------------------------------------
 
+local addonName = ...
+
 SMARTBUFF_GLOBALS = { };
-local SG = SMARTBUFF_GLOBALS;
+S = SMARTBUFF_GLOBALS;
 
 SMARTBUFF_TTC_R = 1;
 SMARTBUFF_TTC_G = 1;
@@ -13,6 +15,7 @@ SMARTBUFF_TTC_A = 1;
 SMARTBUFF_OPTIONSFRAME_HEIGHT = 720;
 SMARTBUFF_OPTIONSFRAME_WIDTH = 500;
 
+---@alias ActionType "item"|"spell"
 SMARTBUFF_ACTION_ITEM  = "item";
 SMARTBUFF_ACTION_SPELL = "spell";
 
@@ -51,6 +54,30 @@ NumberFontNormalLarge
 NumberFontNormalHuge
 ]]--
 
+Enum.InventorySlot = {
+  EMPTY = -1,
+  INVTYPE_NON_EQUIP	= 0,
+  INVTYPE_HEAD = 1,
+  INVTYPE_NECK = 2,
+  INVTYPE_SHOULDER = 3,
+  INVTYPE_BODY = 4,
+  INVTYPE_CHEST = 5,
+  INVTYPE_WAIST = 6,
+  INVTYPE_LEGS = 7,
+  INVTYPE_FEET = 8,
+  INVTYPE_WRIST = 9,
+  INVTYPE_HAND = 10,
+  INVTYPE_FINGER1 = 11,
+  INVTYPE_FINGER2 = 12,
+  INVTYPE_TRINKET1 = 13,
+  INVTYPE_TRINKET2 = 14,
+  INVTYPE_BACK = 15,
+  INVTYPE_MAINHAND = 16,
+  INVTYPE_OFFHAND = 17,
+  INVTYPE_RANGED = 18,
+  INVTYPE_TABARD = 19
+}
+
 ----------------------------------------------------------------------------
 
 -- Creates a table `t` indexed by both sequentially numbered `keys` _and_ `values`,
@@ -72,20 +99,20 @@ function enum(t)
 	return t
 end
 
--- Creates a table `t` of self-indexed values
+-- Returns a table `t` of self-indexed values
 -- ## Example
 -- ```lua
 -- t = dict( "foo", "bar")
 -- print(t.foo)  -- prints the string "foo"
 -- ```
----@param list table
----@return table
-function dict(list)
-	for k, v in pairs(list) do
-		list[k] = nil
-		list[v] = v
+---@param tbl table
+---@return table t
+function dict(tbl)
+	local t = {};
+	for k, v in ipairs(tbl) do
+		t[v] = v;
 	end
-	return list
+	return t;
 end
 
 -- Returns a copy of `list` with `keys` and `values` inverted
@@ -96,12 +123,11 @@ end
 ---print(t.foo); -- prints the number 1
 ---print(s[1]); -- prints the string "foo";
 ---```
----@generic T
----@param list T[]
----@return T out
-function table.invert(list)
+---@param tbl table
+---@return table out
+function table.invert(tbl)
   local out = {}
-  for k, v in pairs(list) do
+  for k, v in pairs(tbl) do
     out[v] = k
   end
   return out

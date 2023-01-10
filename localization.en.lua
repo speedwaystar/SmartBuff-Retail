@@ -70,17 +70,21 @@ SMARTBUFF_DEMONTYPE = "Imp";
 SMARTBUFF_UNDEAD    = "Undead";
 
 -- Classes
+---@enum Classes
 SMARTBUFF_CLASSES = {"Druid", "Hunter", "Mage", "Paladin", "Priest", "Rogue", "Shaman", "Warlock", "Warrior", "Death Knight", "Monk", "Demon Hunter", "Evoker", "Hunter Pet", "Warlock Pet", "Death Knight Pet", "Tank", "Healer", "Damage Dealer"};
 
--- Templates and Instances
+---@enum Templates
 SMARTBUFF_TEMPLATES = {"Solo", "Party", "LFR", "Raid", "Mythic Keystone", "Battleground", "Arena", "Castle Nathria", "Sanctum of Domination", "Sepulcher of the First Ones", "Vault of the Incarnates", "Custom 1", "Custom 2", "Custom 3", "Custom 4", "Custom 5"};
+
+---@enum Instances
 SMARTBUFF_INSTANCES = {"Castle Nathria", "Sanctum of Domination", "Sepulcher of the First Ones", "Vault of the Incarnates"};
+
 -- Mount
 SMARTBUFF_MOUNT = "Increases speed by (%d+)%%.";
 
 -- Abbreviations
 SMARTBUFF_ABBR_CHARGES_OL = "%d c";
-
+SMARTBUFF_ABBR_SECONDS    = "%d s";
 -- Bindings
 BINDING_NAME_SMARTBUFF_BIND_TRIGGER = "Trigger";
 BINDING_NAME_SMARTBUFF_BIND_TARGET  = "Target";
@@ -91,7 +95,7 @@ BINDING_NAME_SMARTBUFF_BIND_RESETBUFFTIMERS = "Reset buff timers";
 
 -- experimental feature - for testing.
 SMARTBUFF_OFT_FIXBUFF		 = "Fix Casting"
-SMARTBUFF_OFTT_FIXBUFF		 = "Only tick this option if Smartbuff is failing to cast buffs while using the\nscroll mouse, action button or macro. Combat buffing will not work with\nthis setting active but you will be notified its missing for manual buffing."
+SMARTBUFF_OFTT_FIXBUFF		 = "Only tick this option if Smartbuff is failing to cast buffs while using the\nscroll mouse|action button or macro. Combat buffing will not work with\nthis setting active but you will be notified its missing for manual buffing."
 
 SMARTBUFF_OFT                = "SmartBuff On/Off";
 SMARTBUFF_OFT_MENU           = "Show/hide options menu";
@@ -238,6 +242,8 @@ SMARTBUFF_MSG_CLASS          = "Class";
 SMARTBUFF_MSG_CHARGES        = "charges";
 SMARTBUFF_MSG_SOUNDS		 = "Splash Sound Selection: "
 SMARTBUFF_MSG_SPECCHANGED    = "Spec changed (%s), loading buff templates...";
+SMARTBUFF_MSG_CHARGES  = "%d charges";
+SMARTBUFF_MSG_SECONDS        = "%d seconds";
 
 -- Support
 SMARTBUFF_MINIMAP_TT         = "Left click: options menu\nRight click: On/Off\nAlt-Left Click: SmartDebuff\nShift drag: Move button";

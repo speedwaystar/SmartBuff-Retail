@@ -387,7 +387,7 @@ SMARTBUFF_BST_REMINDER       = "通报";
 SMARTBUFF_BST_MANALIMIT      = "最低值";
 
 -- BUFF设置提示信息内容
-SMARTBUFF_BSTT_SELFONLY      = "仅BUFF自己，不给其他队友BUFF。"; 
+SMARTBUFF_BSTT_SELFONLY      = "仅BUFF自己，不给其他队友BUFF。";
 SMARTBUFF_BSTT_SELFNOT       = "BUFF所有其他选择的职业，但是不BUFF自己。";
 SMARTBUFF_BSTT_COMBATIN      = "在战斗状态时仍保持自动触发技能";
 SMARTBUFF_BSTT_COMBATOUT     = "在非战斗状态时保持自动触发技能";
