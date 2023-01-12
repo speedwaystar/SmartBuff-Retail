@@ -33,7 +33,7 @@ SMARTBUFF_CONST_FOOD      = "FOOD";       -- arg1 = itemID
 SMARTBUFF_CONST_SCROLL    = "SCROLL";     -- arg1 = itemID
 SMARTBUFF_CONST_POTION    = "POTION";     -- arg1 = itemID
 SMARTBUFF_CONST_STANCE    = "STANCE";     -- arg1 = spellID
-SMARTBUFF_CONST_ITEM      = "ITEM";       -- arg1 = spellID (sic) conjured items
+SMARTBUFF_CONST_CONJURE   = "ITEM";       -- arg1 = spellID (sic) conjured items
 SMARTBUFF_CONST_ITEMGROUP = "ITEMGROUP";  -- items used on units. unused
 -- toys are currently handled by a special case, so this constant isn't used (yet)
 SMARTBUFF_CONST_TOY       = "TOY";        -- arg1 = itemID
@@ -1016,9 +1016,18 @@ end
 ---@field GroupBuff integer
 ---@field GroupBuffDuration integer
 ---@field GroupBuffID integer
----@field Icon FileDataID
----@field IconGroup FileDataID
+---@field Icon Icon
+---@field IconGroup Icon
 ---@field Order table
+---@field HasMainHandEnchant boolean
+---@field MainHandExpiration number
+---@field MainHandCharges integer
+---@field HasOffHandEnchant boolean
+---@field OffHandExpiration number
+---@field OffHandCharges integer
+---@field HasCharges boolean
+---@field Charges integer
+---@field RebuffTime number
 ---@field StartTime number The time when the cooldown started (as returned by `GetTime())`; zero if no cooldown; current time if (enabled == 0)
 ---@field Enabled integer `0` if the spell is active (`Stealth`, `Shadowmeld`, `Presence of Mind` etc) and the cooldown will begin as soon as the spell is used/cancelled; `1` otherwise
 
@@ -1037,11 +1046,9 @@ end
 ---@field BuffSelfOnly boolean
 ---@field EnableGroup boolean
 ---@field IgnoreList table
----@field Links table aura IDs overwritten by the buff
 ---@field ManaLimit integer
----@field RebuffTime number
----@field Type Type
 ---@field IsEnabled boolean
+---@field RebuffTime number
 
 
 ---@enum Enum.SpellList
@@ -1122,8 +1129,8 @@ function SMARTBUFF_InitSpellList()
       {SMARTBUFF_PRISBARRIER, 1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_IMPPRISBARRIER, 1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_BLAZBARRIER, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_REFRESHMENT, 0.03, SMARTBUFF_CONST_ITEM, nil, SMARTBUFF_CONJUREDMANA, nil, S.FoodMage},
-      {SMARTBUFF_CREATEMG, 0.03, SMARTBUFF_CONST_ITEM, nil, SMARTBUFF_MANAGEM},
+      {SMARTBUFF_REFRESHMENT, 0.03, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_CONJUREDMANA, nil, S.FoodMage},
+      {SMARTBUFF_CREATEMG, 0.03, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_MANAGEM},
 --    {SMARTBUFF_ARCANEINTELLECT, 60, SMARTBUFF_CONST_GROUP, {32}, "HPET;WPET;DKPET"}
     };
   end
@@ -1141,7 +1148,7 @@ function SMARTBUFF_InitSpellList()
       {SMARTBUFF_GOSACRIFICE, 60, SMARTBUFF_CONST_SELF, nil, S.CheckPetNeeded},
       -- {SMARTBUFF_BLOODHORROR, 1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_SOULSTONE, 15, SMARTBUFF_CONST_GROUP, {18}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;EVOKER;MONK;DEMONHUNTER;HPET;WPET;DKPET"},
-      {SMARTBUFF_CREATEHS, 0.03, SMARTBUFF_CONST_ITEM, nil, SMARTBUFF_HEALTHSTONE},
+      {SMARTBUFF_CREATEHS, 0.03, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_HEALTHSTONE},
       {SMARTBUFF_SUMMONIMP, -1, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
       {SMARTBUFF_SUMMONFELHUNTER, -1, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
       {SMARTBUFF_SUMMONVOIDWALKER, -1, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
