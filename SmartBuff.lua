@@ -442,7 +442,7 @@ end
 
 ---@param buffID BuffID
 ---@return BuffTemplate
-local function GetBuffSettings(buffID)
+local function GetBuffTemplate(buffID)
   if (B and buffID) then
     return B[CS()][CT()][buffID];
   end
@@ -452,9 +452,9 @@ end
 ---Initialize buff settings
 ---@param buff BuffInfo
 ---@param reset? boolean whether to reset
-local function InitBuffSettings(buff, reset)
+local function InitBuffTemplate(buff, reset)
   --- user's buff settings by specialization/smartgroup
-  local template = GetBuffSettings(buff.BuffID); ---@type BuffTemplate
+  local template = GetBuffTemplate(buff.BuffID); ---@type BuffTemplate
   if (template == nil) then
     B[CS()][CT()][buff.BuffID] = {};
     template = B[CS()][CT()][buff.BuffID];
@@ -1284,9 +1284,11 @@ function SMARTBUFF_SetBuff(buff, key, isClassAbility)
     else
       b.Icon = select(10, GetItemInfo(b.BuffID))
     end
+
+    -- currently unconditionally adding which is NOT RIGHT
     SMARTBUFF_AddMsgD("Add "..BuffToLink(b));
     BuffIndex[b.BuffID] = key;
-    InitBuffSettings(b);
+    InitBuffTemplate(b);
     return key + 1;
   end
   -- buff check failed
@@ -1816,7 +1818,6 @@ function SMARTBUFF_TryBuffUnit(target, subgroup, state, buffID)
     InRange = 1
   }
   local isSpellUsable, outOfMana = IsUsableSpell(b.BuffID)
-  O.BuffPvp = O.BuffPvp or false;
   -- check for gross errors which prevent the buff from being cast, (i.e. player
   -- dead, target is anenemy, disconnected, mounted, PVP flagged if the player
   -- hasn't opted to buff in PVP, etc)
@@ -2483,8 +2484,6 @@ end
 ---@return number timeLeft
 ---@return integer count
 ---@overload fun(unit:string, aura:integer, type:Type, links:table|nil, chain:table|nil): auraInstanceID:SpellID
--- BUG: this doesn't work if buffID is an item number, because it won't match the aura number
--- whereas previously they had the same string name
 function SMARTBUFF_GetUnitBuffInfo(unit, buff, type, links, chain)
   printd("SMARTBUFF_GetUnitBuffInfo (", unit, buff, type, links, chain, ")");
   if (not unit or (not buff and not links)) then return 0 end
@@ -2499,7 +2498,7 @@ function SMARTBUFF_GetUnitBuffInfo(unit, buff, type, links, chain)
         --SMARTBUFF_AddMsgD("Check chained stance: "..auraInstanceID);
         print("Check for chained stance: "..stance);
         if stance and table.find(chain, stance) then
-          local v = GetBuffSettings(stance);
+          local v = GetBuffTemplate(stance);
           if (v and v.BuffEnabled) then
             for j = 1, GetNumShapeshiftForms(), 1 do
               local _, name, active, castable = GetShapeshiftFormInfo(j);
@@ -2549,7 +2548,7 @@ function SMARTBUFF_GetUnitBuffInfo(unit, buff, type, links, chain)
       --SMARTBUFF_AddMsgD("Check chained buff ("..unitName.."): "..defBuff);
       for i = 1, #t, 1 do
         if (t[i] and table.find(chain, t[i])) then
-          local v = GetBuffSettings(t[i]);
+          local v = GetBuffTemplate(t[i]);
           if (v and v.BuffEnabled) then
             local auraInfo = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, t[i])
             if auraInfo and links and auraInfo.source == "player" then
@@ -3458,7 +3457,7 @@ function SMARTBUFF_OSelfFirst()
 end
 
 function SMARTBUFF_OToggleBuff(s, i)
-  local settings = GetBuffSettings(Buffs[i].BuffID);
+  local settings = GetBuffTemplate(Buffs[i].BuffID);
   if (settings == nil) then
     return;
   end
@@ -3521,7 +3520,7 @@ function SmartBuff_BuffSetup_Show(i)
   local btype = Buffs[i].Type;
   local hidden = true;
   local n = 0;
-  local template = GetBuffSettings(buffID);
+  local template = GetBuffTemplate(buffID);
 
   if (buffID == nil or btype == SMARTBUFF_CONST_TRACK) then
     SmartBuff_BuffSetup:Hide();
@@ -3671,7 +3670,7 @@ function SmartBuff_BuffSetup_OnClick()
     return;
   end
   local buffID = Buffs[i].BuffID;
-  local Buff = GetBuffSettings(buffID);
+  local Buff = GetBuffTemplate(buffID);
 
   Buff.BuffSelfOnly    = SmartBuff_BuffSetup_cbSelf:GetChecked();
   Buff.BuffSelfNot     = SmartBuff_BuffSetup_cbSelfNot:GetChecked();
