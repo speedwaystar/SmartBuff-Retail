@@ -335,11 +335,6 @@ end
 ---@param buffID any
 ---@return BuffInfo
 local function GetBuffInfo(buffID)
-  -- print("______________BUFFS______________________")
-  -- dump(Buffs)
-  -- print("______________INDEX______________________")
-  -- dump(BuffIndex)
-  printd("buffID", buffID, "=", Buffs[BuffIndex[buffID]])
   return Buffs[BuffIndex[buffID]];
 end
 
@@ -1117,10 +1112,12 @@ function SMARTBUFF_InitBuffList()
       if (b.Type == SMARTBUFF_CONST_TRACK and SMARTBUFF_IsTrackingKnown(b))
       or (SMARTBUFF_IsSpell(b) and IsSpellKnownOrOverridesKnown(b.BuffID))
       or (SMARTBUFF_IsItem(b) and SMARTBUFF_ItemCount(b) > 0) then
-        printd("buff", b.BuffID, "type", "isItem", SMARTBUFF_IsItem(b), b.Type, "name", b.Name, "link", b.Hyperlink)
-        Buffs[b.BuffID] = b;
-        BuffIndex[b.BuffID] = b.BuffID -- this should enable us to do away with BuffIndex
-        printd("Adding", Buffs[b.BuffID].Hyperlink)
+        -- Buffs[b.BuffID] = b;
+        -- BuffIndex[b.BuffID] = b.BuffID -- this should enable us to do away with BuffIndex
+        Buffs[n] = b
+        BuffIndex[b.BuffID] = n
+        n = n + 1
+        -- printd("Adding", Buffs[BuffIndex[b.BuffID]].Hyperlink)
       end
     end
   end
@@ -1159,7 +1156,7 @@ function SMARTBUFF_AddBuff(buffData, isClassAbility)
     b.Hyperlink = GetSpellLink(b.BuffID) ---@type string
     b.StartTime, b.Duration = GetSpellCooldown(b.BuffID) ---@type number
   else
-    b.Hyperlink, b.Name = GetItemInfo(b.BuffID) ---@type string
+    b.Name, b.Hyperlink = GetItemInfo(b.BuffID) ---@type string
     b.StartTime, b.Duration = GetItemCooldown(b.BuffID) ---@type number
   end
   b.MinLevel = buffData[Enum.SpellList.MinLevel]; -- FIXME: b.MinLevel is never used
