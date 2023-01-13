@@ -1,8 +1,8 @@
-local _;
+ local _;
 S = SMARTBUFF_GLOBALS;
 
 SMARTBUFF_PLAYERCLASS = nil;
-SMARTBUFF_BUFFLIST = {};
+SMARTBUFF_CLASSBUFFS = {};
 
 -- buff categories
 ---@alias Type
@@ -58,7 +58,7 @@ local function InsertItem(t, type, itemId, spellId, duration, link)
   local spell = GetSpellInfo(spellId);
   if (item and spell) then
     --printd("Item found: "..itemId..", "..spellId);
-    tinsert(t, {item, duration, type, nil, spell, link});
+    table.insert(t, {item, duration, type, nil, spell, link});
   end
 end
 
@@ -1013,6 +1013,9 @@ end
 ---@field MinLevel table required level (deprecated)
 ---@field Links table aura IDs overwritten by the buff
 ---@field Chain table
+---@field Name string
+---@field Hyperlink string
+---@field Target Unit
 ---@field GroupBuff integer
 ---@field GroupBuffDuration integer
 ---@field GroupBuffID integer
@@ -1028,8 +1031,12 @@ end
 ---@field HasCharges boolean
 ---@field Charges integer
 ---@field RebuffTime number
----@field StartTime number The time when the cooldown started (as returned by `GetTime())`; zero if no cooldown; current time if (enabled == 0)
----@field Enabled integer `0` if the spell is active (`Stealth`, `Shadowmeld`, `Presence of Mind` etc) and the cooldown will begin as soon as the spell is used/cancelled; `1` otherwise
+---@field StartTime number The time when the cooldown started (as returned by `GetTime())`; zero if no cooldown
+---@field expirationTime number
+---@field TimeLeft number
+---@field HasExpired boolean
+---@field InventorySlot integer
+---@field ActionType ActionType
 
 --- buff settings specific to each specialization/smartgroup
 --- which coincide with the checkboxes in the UI
@@ -1073,8 +1080,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Druid
   if (SMARTBUFF_PLAYERCLASS == "DRUID") then
-    ---@type table<integer, BuffInfo>
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_DRUID_MOONKIN, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_DRUID_TREANT, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_DRUID_BEAR, -1, SMARTBUFF_CONST_SELF},
@@ -1091,8 +1098,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Priest
   if (SMARTBUFF_PLAYERCLASS == "PRIEST") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_SHADOWFORM, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_VAMPIRICEMBRACE, 30, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_POWERWORDFORTITUDE, 60, SMARTBUFF_CONST_GROUP, {14}, "HPET;WPET;DKPET", S.LinkSta},
@@ -1107,8 +1114,8 @@ function SMARTBUFF_InitSpellList()
   end
   -- Mage
   if (SMARTBUFF_PLAYERCLASS == "MAGE") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_ARCANEINTELLECT, 60, SMARTBUFF_CONST_GROUP, {1,14,28,42,56,70,80}, nil, S.LinkInt, S.LinkInt},
       {SMARTBUFF_DALARANBRILLIANCE, 60, SMARTBUFF_CONST_GROUP, {80,80,80,80,80,80,80}, nil, S.LinkInt, S.LinkInt},
       {SMARTBUFF_TEMPSHIELD, 0.067, SMARTBUFF_CONST_SELF},
@@ -1137,8 +1144,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Warlock
   if (SMARTBUFF_PLAYERCLASS == "WARLOCK") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_DEMONARMOR, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_AMPLIFYCURSE, 1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_DARKINTENT, 60, SMARTBUFF_CONST_GROUP, nil, "WARRIOR;HUNTER;ROGUE"},
@@ -1166,8 +1173,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Hunter
   if (SMARTBUFF_PLAYERCLASS == "HUNTER") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_RAPIDFIRE, 0.2, SMARTBUFF_CONST_SELF},
       --{SMARTBUFF_FOCUSFIRE, 0.25, SMARTBUFF_CONST_SELF},
       --{SMARTBUFF_TRAPLAUNCHER, -1, SMARTBUFF_CONST_SELF},
@@ -1185,8 +1192,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Shaman
   if (SMARTBUFF_PLAYERCLASS == "SHAMAN") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_LIGHTNINGSHIELD, 60, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainShamanShield},
       {SMARTBUFF_WATERSHIELD, 60, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainShamanShield},
       {SMARTBUFF_WINDFURYW, 60, SMARTBUFF_CONST_WEAPON},
@@ -1204,8 +1211,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Warrior
   if (SMARTBUFF_PLAYERCLASS == "WARRIOR") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_BATTLESHOUT, 60, SMARTBUFF_CONST_SELF, nil, nil, S.LinkAp, S.ChainWarriorShout},
       {SMARTBUFF_COMMANDINGSHOUT, 60, SMARTBUFF_CONST_SELF, nil, nil, S.LinkSta, S.ChainWarriorShout},
       {SMARTBUFF_BERSERKERRAGE, 0.165, SMARTBUFF_CONST_SELF},
@@ -1218,8 +1225,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Rogue
   if (SMARTBUFF_PLAYERCLASS == "ROGUE") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_STEALTH, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_BLADEFLURRY, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_SAD, 0.2, SMARTBUFF_CONST_SELF},
@@ -1241,8 +1248,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Paladin
   if (SMARTBUFF_PLAYERCLASS == "PALADIN") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_RIGHTEOUSFURY, 30, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_HOLYSHIELD, 0.166, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_AVENGINGWARTH, 0.333, SMARTBUFF_CONST_SELF},
@@ -1266,8 +1273,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Deathknight
   if (SMARTBUFF_PLAYERCLASS == "DEATHKNIGHT") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_DANCINGRW, 0.2, SMARTBUFF_CONST_SELF},
       --{SMARTBUFF_BLOODPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
       --{SMARTBUFF_FROSTPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
@@ -1281,8 +1288,8 @@ function SMARTBUFF_InitSpellList()
 
   -- Monk
   if (SMARTBUFF_PLAYERCLASS == "MONK") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       --{SMARTBUFF_LOTWT, 60, SMARTBUFF_CONST_GROUP, {81}},
       --{SMARTBUFF_LOTE, 60, SMARTBUFF_CONST_GROUP, {22}, nil, S.LinkStats},
       {SMARTBUFF_SOTFIERCETIGER, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainMonkStance},
@@ -1296,21 +1303,21 @@ function SMARTBUFF_InitSpellList()
 
   -- Demon Hunter
   if (SMARTBUFF_PLAYERCLASS == "DEMONHUNTER") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
     };
   end
 
   -- Evoker
   if (SMARTBUFF_PLAYERCLASS == "EVOKER") then
-    ---@type BuffInfo[]
-    SMARTBUFF_BUFFLIST = {
+    ---@type table[]
+    SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_BRONZEBLESSING, 60, SMARTBUFF_CONST_SELF},
     };
   end
 
   -- Stones and oils
-  ---@type BuffInfo[]
+  ---@type table[]
   SMARTBUFF_WEAPON = {
     {SMARTBUFF_SSROUGH, 60, SMARTBUFF_CONST_INV},
     {SMARTBUFF_SSCOARSE, 60, SMARTBUFF_CONST_INV},
@@ -1363,7 +1370,7 @@ function SMARTBUFF_InitSpellList()
   };
 
   -- Tracking
-  ---@type BuffInfo[]
+  ---@type table[]
   SMARTBUFF_TRACKING = {
     {SMARTBUFF_FINDMINERALS, -1, SMARTBUFF_CONST_TRACK},
     {SMARTBUFF_FINDHERBS, -1, SMARTBUFF_CONST_TRACK},
@@ -1379,7 +1386,7 @@ function SMARTBUFF_InitSpellList()
   };
 
   -- Racial
-  ---@type BuffInfo[]
+  ---@type table[]
   SMARTBUFF_RACIAL = {
     {SMARTBUFF_STONEFORM, 0.133, SMARTBUFF_CONST_SELF},  -- Dwarv
     --{SMARTBUFF_PRECEPTION, 0.333, SMARTBUFF_CONST_SELF}, -- Human
@@ -1479,7 +1486,7 @@ function SMARTBUFF_InitSpellList()
   end
 
   -- Scrolls
-  ---@type BuffInfo[]
+  ---@type table[]
   SMARTBUFF_SCROLL = {
     {SMARTBUFF_MiscItem17, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem17, S.LinkFlaskLeg},
 --    {SMARTBUFF_MiscItem16, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem16},
@@ -1651,7 +1658,7 @@ function SMARTBUFF_InitSpellList()
 
 
   -- Potions
-  ---@type BuffInfo[]
+  ---@type table[]
   SMARTBUFF_POTION = {
     {SMARTBUFF_ELIXIRTBC1, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIRTBC1},
     {SMARTBUFF_ELIXIRTBC2, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIRTBC2},

@@ -80,23 +80,33 @@ Enum.InventorySlot = {
 
 ----------------------------------------------------------------------------
 
--- Creates a table `t` indexed by both sequentially numbered `keys` _and_ `values`,
--- thus supporting reverse lookup. Assumes numeric 'keys' and alphanumeric 'valuee'.
--- ## Example
--- ```lua
--- t = enum( "foo", "bar" );
--- print(t.hello) -- prints the integer 1
--- print(t[1])    -- prints the string "foo"
--- ```
----@param t table
+-- Returns an unumerated table.
+---## Example
+---```
+---Enum.Animals = Enum.MakeEnum ( "Dog", "Cat", "Rabbit" )
+---print( Enum.Animals.Cat ) -- prints "Cat"
+---```
+---@param ... ...
 ---@return table
-function enum(t)
-		for i = 1, #t do
-			local v = t[i]
-			--t[i] = nil
-			t[v] = i
-	end
-	return t
+function Enum.MakeEnum(...)
+  return tInvert({...})
+	-- 	for i = 1, #t do
+	-- 		local v = t[i]
+	-- 		--t[i] = nil
+	-- 		t[v] = i
+	-- end
+	-- return t
+end
+
+-- Returns an unumerated table from an existing table.
+---## Example
+---```
+---Fish = { "Loach", "Pike", "Herring" }
+---Enum.Fish = Enum.MakeEnumFromTable(Fish)
+---print(Enum.Fish.Herring) -- prints "Herring"
+---```
+function Enum.MakeEnumFromTable(t)
+    return tInvert(t)
 end
 
 -- Returns a table `t` of self-indexed values
@@ -106,8 +116,8 @@ end
 -- print(t.foo)  -- prints the string "foo"
 -- ```
 ---@param tbl table
----@return table t
-function dict(tbl)
+---@return table
+function Enum.MakeDict(tbl)
 	local t = {};
 	for k, v in ipairs(tbl) do
 		t[v] = v;
