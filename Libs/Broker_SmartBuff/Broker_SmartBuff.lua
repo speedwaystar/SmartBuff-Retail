@@ -23,8 +23,8 @@ F.LS = LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("SmartBuff", {
 	label = SMARTBUFF_TITLE,
 	OnClick = function(_, msg)
     if (msg == "RightButton") then
-      SMARTBUFF_OToggleBuff();
-	  SMARTBUFF_BROKER_SetIcon();	-- bug fix, credit: SunNova
+      SMARTBUFF_OToggle();
+	    SMARTBUFF_BROKER_SetIcon();	-- bug fix, credit: SunNova
     elseif (msg == "LeftButton" and IsAltKeyDown()) then
       if (IsAddOnLoaded("SmartDebuff")) then
         SMARTDEBUFF_ToggleSF();

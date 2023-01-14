@@ -38,6 +38,78 @@ SMARTBUFF_CONST_ITEMGROUP = "ITEMGROUP";  -- items used on units. unused
 -- toys are currently handled by a special case, so this constant isn't used (yet)
 SMARTBUFF_CONST_TOY       = "TOY";        -- arg1 = itemID
 
+Enum.Spells = Enum.MakeEnum(SMARTBUFF_CONST_GROUP, SMARTBUFF_CONST_FOOD, SMARTBUFF_CONST_GROUPALL, SMARTBUFF_CONST_SELF, SMARTBUFF_CONST_FORCESELF, SMARTBUFF_CONST_WEAPON, SMARTBUFF_CONST_STANCE, SMARTBUFF_CONST_CONJURE, SMARTBUFF_CONST_TRACK)
+
+Enum.Items = Enum.MakeEnum(SMARTBUFF_CONST_INV, SMARTBUFF_CONST_SCROLL, SMARTBUFF_CONST_POTION, SMARTBUFF_CONST_ITEMGROUP)
+
+--- universal settings for a buff
+---@class BuffInfo
+---@field BuffID integer itemID|spellID
+---@field Duration number Cooldown duration in seconds, `0` if spell is ready to be cast.
+---@field Type Type
+---@field AuraID integer spellID of buff aura
+---@field Params string e.g."WARRIOR;HUNTER;ROGUE" or "HPET;WPET;DKPET"
+---@field MinLevel table required level (deprecated)
+---@field Links table aura IDs overwritten by the buff
+---@field Chain table
+---@field Name string
+---@field Hyperlink string
+---@field Target Unit
+---@field GroupBuff integer
+---@field GroupBuffDuration integer
+---@field GroupBuffID integer
+---@field Icon Icon
+---@field IconGroup Icon
+---@field Order table
+---@field HasMainHandEnchant boolean
+---@field MainHandExpiration number
+---@field MainHandCharges integer
+---@field HasOffHandEnchant boolean
+---@field OffHandExpiration number
+---@field OffHandCharges integer
+---@field HasCharges boolean
+---@field Charges integer
+---@field RebuffTimer number
+---@field StartTime number The time when the cooldown started (as returned by `GetTime())`; zero if no cooldown
+---@field expirationTime number
+---@field TimeLeft number
+---@field HasExpired boolean
+---@field InventorySlot integer
+---@field ActionType ActionType
+---@field SplashIcon string
+
+--- buff settings specific to each specialization/smartgroup
+--- which coincide with the checkboxes in the UI
+---@class BuffTemplate
+---@field AddList table
+---@field BuffEnabled boolean
+---@field BuffInCombat boolean
+---@field BuffMainHand boolean
+---@field BuffOffHand boolean
+---@field BuffOutOfCombat boolean
+---@field BuffReminder boolean
+---@field BuffRightHand boolean
+---@field BuffSelfNot boolean
+---@field BuffSelfOnly boolean
+---@field EnableGroup boolean
+---@field IgnoreList table
+---@field ManaLimit integer
+---@field IsEnabled boolean
+---@field RebuffTimer number
+
+---@enum Enum.SpellList
+Enum.SpellList =
+{
+  BuffID = 1;
+  Duration = 2;
+  Type = 3;
+  MinLevel = 4;
+  AuraID = 5;
+  Params = 5;
+  Links = 6;
+  Chain = 7;
+}
+
 S.CheckPet = "CHECKPET";
 S.CheckPetNeeded = "CHECKPETNEEDED";
 S.CheckFishingPole = "CHECKFISHINGPOLE";
@@ -47,7 +119,7 @@ S.Toybox = { };
 local function GetItems(items)
   local t = { };
   for _, id in pairs(items) do
-    --dprint("Item found:", _G.GetItemInfo(id));
+    --printd("Item found:", _G.GetItemInfo(id));
     table.insert(t, id);
   end
   return t;
@@ -1002,74 +1074,6 @@ function SMARTBUFF_InitSpellIDs()
 
   SMARTBUFF_AddMsgD("Item IDs initialized");
 end
-
---- universal settings for a buff
----@class BuffInfo
----@field BuffID integer itemID|spellID
----@field Duration number Cooldown duration in seconds, `0` if spell is ready to be cast.
----@field Type Type
----@field AuraID integer spellID of buff aura
----@field Params string e.g."WARRIOR;HUNTER;ROGUE" or "HPET;WPET;DKPET"
----@field MinLevel table required level (deprecated)
----@field Links table aura IDs overwritten by the buff
----@field Chain table
----@field Name string
----@field Hyperlink string
----@field Target Unit
----@field GroupBuff integer
----@field GroupBuffDuration integer
----@field GroupBuffID integer
----@field Icon Icon
----@field IconGroup Icon
----@field Order table
----@field HasMainHandEnchant boolean
----@field MainHandExpiration number
----@field MainHandCharges integer
----@field HasOffHandEnchant boolean
----@field OffHandExpiration number
----@field OffHandCharges integer
----@field HasCharges boolean
----@field Charges integer
----@field RebuffTime number
----@field StartTime number The time when the cooldown started (as returned by `GetTime())`; zero if no cooldown
----@field expirationTime number
----@field TimeLeft number
----@field HasExpired boolean
----@field InventorySlot integer
----@field ActionType ActionType
-
---- buff settings specific to each specialization/smartgroup
---- which coincide with the checkboxes in the UI
----@class BuffTemplate
----@field AddList table
----@field BuffEnabled boolean
----@field BuffInCombat boolean
----@field BuffMainHand boolean
----@field BuffOffHand boolean
----@field BuffOutOfCombat boolean
----@field BuffReminder boolean
----@field BuffRightHand boolean
----@field BuffSelfNot boolean
----@field BuffSelfOnly boolean
----@field EnableGroup boolean
----@field IgnoreList table
----@field ManaLimit integer
----@field IsEnabled boolean
----@field RebuffTime number
-
-
----@enum Enum.SpellList
-Enum.SpellList =
-{
-  BuffID = 1;
-  Duration = 2;
-  Type = 3;
-  MinLevel = 4;
-  AuraID = 5;
-  Params = 5;
-  Links = 6;
-  Chain = 7;
-}
 
 function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == nil) then return; end
