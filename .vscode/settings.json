@@ -102,8 +102,8 @@
     ],
     "Lua.diagnostics.disable": [
         // "unused-function",
-        "need-check-nil",
-        "cast-local-type",
+        // "need-check-nil",
+        // "cast-local-type",
         // "undefined-field",
         // "param-type-mismatch"
     ],
