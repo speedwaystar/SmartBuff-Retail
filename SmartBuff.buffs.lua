@@ -69,6 +69,13 @@ ACTION_TYPE_ITEM  = "item"
 ---icon info
 ---@field Icon Icon the icon
 ---@field SplashIcon string
+---item info
+---@field MinLevel integer
+---@field ItemType string
+---@field ItemSubType string
+---@field EquipSlot Enum.InventorySlot
+---@field ItemTypeID Enum.ItemType
+---@field ItemSubTypeID integer
 ---weapon buff info
 ---@field HasMainHandEnchant boolean
 ---@field MainHandExpiration number
@@ -88,16 +95,10 @@ ACTION_TYPE_ITEM  = "item"
                             -- zero if no cooldown; current time if (enabled == 0).
 ---@field IsActive boolean  -- 0 if the spell is active (Stealth, Shadowmeld, Presence of Mind, etc)
                             -- and the cooldown will begin as soon as the spell is used/cancelled; 1 otherwise.
----spell info
+---@field RebuffTimer number
+--spell info
 ---@field MinRange integer
 ---@field MaxRange integer
----item info
----@field MinLevel integer
----@field ItemType string
----@field ItemSubType string
----@field EquipSlot Enum.InventorySlot
----@field ItemTypeID Enum.ItemType
----@field ItemSubTypeID integer
 ---misc info
 ---@field HasCharges boolean
 ---@field Charges integer
@@ -690,6 +691,8 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_CALL_PET3          = 83243;  -- Call Pet 3
   SMARTBUFF_CALL_PET4          = 83244;  -- Call Pet 4
   SMARTBUFF_CALL_PET5          = 83245;  -- Call Pet 5
+  SMARTBUFF_REVIVE_PET         = 982;    -- Revive Pet
+  SMARTBUFF_MEND_PET           = 136;    -- Mend Pet
   -- Hunter buff links
   S.HunterAspects                 = { SMARTBUFF_ASPECT_OF_THE_CHEETAH, SMARTBUFF_ASPECT_OF_THE_WILD };
 
@@ -1203,12 +1206,10 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "HUNTER") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      --{SMARTBUFF_FOCUSFIRE, 0.25, SMARTBUFF_CONST_SELF},
-      --{SMARTBUFF_TRAPLAUNCHER, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ASPECT_OF_THE_CHEETAH, -1, SMARTBUFF_CONST_SELF, nil, nil, S.LinkAspects},
+      {SMARTBUFF_ASPECT_OF_THE_CHEETAH, -1, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
       {SMARTBUFF_CAMOUFLAGE, 1, SMARTBUFF_CONST_SELF},
-      -- {SMARTBUFF_RAPIDFIRE, 1.7/60, SMARTBUFF_CONST_SELF},
-      -- {SMARTBUFF_VOLLEY, 6/60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_RAPIDFIRE, 1.7/60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_VOLLEY, 6/60, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_ASPECT_OF_THE_WILD, 20/60, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
       {SMARTBUFF_CALL_PET1, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(1))) },
       {SMARTBUFF_CALL_PET2, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(2))) },
@@ -1344,7 +1345,7 @@ function SMARTBUFF_InitSpellList()
 
   -- Stones and oils
   ---@type SpellList
-  SMARTBUFF_WEAPON = {
+  SMARTBUFF_INVENTORY = {
     {SMARTBUFF_SSROUGH, 60, SMARTBUFF_CONST_INV},
     {SMARTBUFF_SSCOARSE, 60, SMARTBUFF_CONST_INV},
     {SMARTBUFF_SSHEAVY, 60, SMARTBUFF_CONST_INV},
