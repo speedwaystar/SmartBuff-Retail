@@ -814,7 +814,7 @@ end
 ---@param force? boolean
 function SMARTBUFF_Ticker(force)
   if (force or GetTime() > tTicker + 1) then
-    tTicker = GetTime();
+    Ticker = GetTime();
 
     if (IsSyncReq or TimeTicker > TimeSync + 10) then
       SMARTBUFF_SyncBuffTimers();
@@ -888,15 +888,12 @@ Enum.SmartBuffGroup = {
 
 -- Set the current template and create an array of units
 function SMARTBUFF_SetTemplate()
-  print(SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Solo])
-  print(Enum.SmartBuffGroup["Raid"])
 
   if (InCombatLockdown()) then return end
   if (SmartBuffOptionsFrame:IsVisible()) or not O.AutoSwitchTemplate then return end
 
-  local newTemplate = SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Solo];
-  local name, instanceType, difficultyID, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceID, instanceGroupSize, LfgDungeonID = GetInstanceInfo()
-
+  local _, instanceType, difficultyID, _, _, _, _, _, _, lfgDungeonID = GetInstanceInfo()
+  local newTemplate = SMARTBUFF_TEMPLATES[Enum.GroupType.Solo];
   if IsInRaid() then
     newTemplate = SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Raid];
   elseif IsInGroup() then
@@ -905,7 +902,7 @@ function SMARTBUFF_SetTemplate()
   -- check instance type (allows solo raid clearing, etc)
   if instanceType == "raid" then
     newTemplate = SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Raid];
-    if LfgDungeonID then
+    if lfgDungeonID then
       newTemplate = SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.LFR];
     end
   elseif instanceType == "party" then
@@ -925,24 +922,24 @@ function SMARTBUFF_SetTemplate()
     end
   end
 
-  SMARTBUFF_AddMsgD("Current tmpl: " .. currentTemplate or "nil" .. " - new tmpl: " .. newTemplate or "nil");
-  SMARTBUFF_AddMsg(SMARTBUFF_TITLE.." :: "..SMARTBUFF_OFT_AUTOSWITCHTMP .. ": " .. currentTemplate .. " -> " .. newTemplate);
-  currentTemplate = newTemplate;
+  SMARTBUFF_AddMsgD("Current tmpl: " .. CurrentTemplate or "nil" .. " - new tmpl: " .. newTemplate or "nil");
+  SMARTBUFF_AddMsg(SMARTBUFF_TITLE.." :: "..SMARTBUFF_OFT_AUTOSWITCHTMP .. ": " .. CurrentTemplate .. " -> " .. newTemplate);
+  CurrentTemplate = newTemplate;
 
-  SMARTBUFF_SetBuffs();
-  wipe(cBlacklist);
-  wipe(cBuffTimer);
-  wipe(cUnits);
-  wipe(cGroups);
-  cClassGroups = nil;
-  wipe(cAddUnitList);
-  wipe(cIgnoreUnitList);
+  if (SMARTBUFF_TEMPLATES[CurrentTemplate] == nil) then
+    SMARTBUFF_InitBuffList();
+  end
+  table.wipe(Blacklist);
+  table.wipe(BuffTimer);
+  table.wipe(Units);
+  table.wipe(Groups);
+  ClassGroups = nil;
+  table.wipe(AddUnitList);
+  table.wipe(IgnoreUnitList);
 
   -- Raid Setup
   if (newTemplate == (SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Raid])) then
-    cClassGroups = { };
-    local name, server, rank, subgroup, level, class, classeng, zone, online, isDead;
-    local sRUnit = nil;
+    ClassGroups = { };
 
     for n = 1, MaxRaid, 1 do
       local name, _, subgroup = GetRaidRosterInfo(n);
@@ -954,7 +951,7 @@ function SMARTBUFF_SetTemplate()
           name = string.sub(name, 1, i - 1);
           SMARTBUFF_AddMsgD(name .. ", " .. server);
         end
-        raidUnit = "raid"..n;
+        local raidUnit = "raid"..n;
 
         --SMARTBUFF_AddMsgD(name .. ", " .. raidUnit .. ", " .. UnitName(raidUnit));
 
@@ -989,8 +986,8 @@ function SMARTBUFF_SetTemplate()
 
   -- Party Setup
   elseif (newTemplate == (SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Party])) then
-    cClassGroups = { };
-    if (B[CS()][currentTemplate].SelfFirst) then
+    ClassGroups = { };
+    if (B[CS()][CurrentTemplate].SelfFirst) then
       SMARTBUFF_AddSoloSetup();
       --SMARTBUFF_AddMsgD("Buff self first");
     end
@@ -1003,7 +1000,7 @@ function SMARTBUFF_SetTemplate()
       SMARTBUFF_AddUnitToClass("party", j);
       SmartBuff_AddToUnitList(1, "party"..j, 1);
       SmartBuff_AddToUnitList(2, "party"..j, 1);
-    name, _, _, _, _, _, _, online, _, _ = GetRaidRosterInfo(j);
+	  local name, _, _, _, _, _, _, online, _, _ = GetRaidRosterInfo(j);
     if name and online then SendSmartbuffVersion(name, "party") end
     end
     SMARTBUFF_AddMsgD("Party Unit-Setup finished");
@@ -3204,7 +3201,7 @@ function SMARTBUFF_OToggle()
   if (not SmartBuff_Initialized) then return; end
   O.SmartBuff_Enabled = SMARTBUFF_toggleBool(O.SmartBuff_Enabled, "Active = ");
   SMARTBUFF_CheckMiniMapButton();
-  if (O.Toggle) then
+  if (O.SmartBuff_Enabled) then
     SMARTBUFF_SetTemplate();
   end
 end
