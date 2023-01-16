@@ -15,7 +15,7 @@ SMARTBUFF_CREDITS = "|cffffffff"
   .."|cffffffffPayPal.Me: |cff00e0ffhttps://paypal.me/codermik\n\n"
 ;
 
--- 德鲁伊
+--[[ -- 德鲁伊
 SMARTBUFF_DRUID_CAT = "猎豹形态";
 SMARTBUFF_DRUID_MOONKIN = "枭兽形态";
 SMARTBUFF_DRUID_TRACK = "追踪人型生物";
@@ -87,7 +87,7 @@ SMARTBUFF_WARLOCK_PATTERN = {"^恶魔%a+"};
 
 -- 猎人
 SMARTBUFF_TRUESHOTAURA = "强击光环";
-SMARTBUFF_RAPIDFIRE = "急速射击";
+SMARTBUFF_RapidFire = "急速射击";
 SMARTBUFF_AOTH = "雄鹰守护";
 SMARTBUFF_AOTM = "灵猴守护";
 SMARTBUFF_AOTW = "野性守护";
@@ -99,13 +99,13 @@ SMARTBUFF_AOTV = "蝰蛇守护";
 SMARTBUFF_HUNTER_PATTERN = {"守护$"};
 
 -- 萨满祭司
-SMARTBUFF_LIGHTNING_SHIELD = "闪电之盾";
-SMARTBUFF_WATER_SHIELD = "水之护盾";
-SMARTBUFF_EARTH_SHIELD = "大地之盾";
+SMARTBUFF_LightningShield = "闪电之盾";
+SMARTBUFF_WaterShield = "水之护盾";
+SMARTBUFF_EarthShield = "大地之盾";
 SMARTBUFF_ROCKBITERW = "石化武器";
 SMARTBUFF_FROSTBRANDW = "冰封武器";
-SMARTBUFF_FLAMETONGUE_WEAPON = "火舌武器";
-SMARTBUFF_WINDFURY_WEAPON = "风怒武器";
+SMARTBUFF_FlametongueWeapon = "火舌武器";
+SMARTBUFF_WindfuryWeapon = "风怒武器";
 SMARTBUFF_WATERBREATHING = "水下呼吸";
 
 SMARTBUFF_SHAMAN_PATTERN = {"%a+之盾$"};
@@ -252,7 +252,7 @@ SMARTBUFF_CRUNCHYSERPENT = "香脆蛇";
 SMARTBUFF_MOKNATHALSHORTRIBS = "莫克纳萨肋排";
 SMARTBUFF_SPICYCRAWDAD = "香辣小龙虾";
 
-SMARTBUFF_FOOD_AURA = "进食充分";
+SMARTBUFF_FOOD_AURA = "进食充分"; ]]
 
 
 -- 生物类型

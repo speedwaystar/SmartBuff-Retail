@@ -10,7 +10,7 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_WATCH = "water walking"
+SMARTBUFF_WATCH = "windfury weapon"
 ---@param b BuffInfo
 ---@param ... ...
 local function printw(b,...)
@@ -698,8 +698,8 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
       local _, _, stuntex = GetSpellInfo(1604); --get Dazed icon
       if (SMARTBUFF_IsDebuffTexture(arg1, stuntex)) then
         local buff;
-        if (arg1 == "player" and C_UnitAuras.GetAuraDataByAuraInstanceID(arg1, SMARTBUFF_ASPECT_OF_THE_CHEETAH)) then
-          buff = SMARTBUFF_ASPECT_OF_THE_CHEETAH;
+        if (arg1 == "player" and C_UnitAuras.GetAuraDataByAuraInstanceID(arg1, SMARTBUFF_AspectOfTheCheetah)) then
+          buff = SMARTBUFF_AspectOfTheCheetah;
         end
         if (buff) then
           if (O.ToggleReminderSplash and not SmartBuffOptionsFrame:IsVisible()) then
@@ -1323,13 +1323,6 @@ function SMARTBUFF_PreCheck(state, force)
     end
     return false
   end
-  -- if (not UnitAffectingCombat("player") and BuffsResetting) then
-  --   SMARTBUFF_InitBuffList();
-  --   IsSyncReq = true;
-  -- end
-
-  -- MsgWarning = "";
-  -- IsFirstError = true;
 
   SMARTBUFF_ShowSAButton()
   SMARTBUFF_SetButtonTexture(SmartBuff_KeyButton, ImgSB);
@@ -1834,7 +1827,8 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     -- buff failstates
     [1]  = {["BUFF_DISABLED"]     = not template.IsEnabled},
     -- [2]  = {["BUFF_ACTIVE"]       = b.IsActive},
-    [2]  = {["BUFF_ACTIVE"]       = C_UnitAuras.GetAuraDataByAuraInstanceID(target, b.BuffID)},
+    [2]  = {["BUFF_ACTIVE"]       = (UnitIsPlayer(b.Target) and (C_UnitAuras.GetPlayerAuraBySpellID(b.BuffID) ~= nil))
+                                    or (C_UnitAuras.GetAuraDataByAuraInstanceID(b.Target, b.BuffID) ~= nil)},
     [3]  = {["ON_COOLDOWN"]       = select(2,SMARTBUFF_GetCooldown(b)) > 0},
     [4]  = {["LINK_ACTIVE"]       = SMARTBUFF_IsLinkedBuffActive(b)},
     [5]  = {["CHAIN_ACTIVE"]      = SMARTBUFF_IsChainedItemActive(b)},
@@ -1871,9 +1865,9 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     [31] = {["WRONG_DRUID_FORM"]  = PlayerClass == "DRUID" and b.BuffID == SMARTBUFF_DRUID_TRACK
                                     and (SMARTBUFF_ShapeshiftForm() and SMARTBUFF_ShapeshiftForm() ~= SMARTBUFF_DRUID_CAT)},
     -- weapon enchant failstates
-    [32] = {["MAINHAND_BUFF"]     = b.Type == SMARTBUFF_CONST_INV and template.BuffMainHand
+    [32] = {["MAINHAND_BUFF"]     = (b.Type == SMARTBUFF_CONST_INV or b.Type == SMARTBUFF_CONST_WEAPON) and template.BuffMainHand
                                     and select(1, GetWeaponEnchantInfo()) },
-    [33] = {["OFFHAND_BUFF"]      = b.Type == SMARTBUFF_CONST_INV and template.BuffOffHand
+    [33] = {["OFFHAND_BUFF"]      = (b.Type == SMARTBUFF_CONST_INV or b.Type == SMARTBUFF_CONST_WEAPON) and template.BuffOffHand
                                     and select(5, GetWeaponEnchantInfo()) },
     [34] = {["ALREADY_TRACKING"]  = b.Type == SMARTBUFF_CONST_TRACK
                                     and select(3, C_Minimap.GetTrackingInfo(SMARTBUFF_GetTrackingType(b.BuffID)));}

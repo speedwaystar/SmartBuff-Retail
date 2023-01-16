@@ -678,36 +678,36 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_SUMMON_WRATHGUARD    = 112870; -- Summon Wrathguard
 
   -- Hunter
-  SMARTBUFF_VOLLEY              = 194386; -- Volley
-  SMARTBUFF_RAPIDFIRE           = 257044; -- Rapid Fire
-  SMARTBUFF_CAMOUFLAGE          = 199483; -- Camouflage
-  SMARTBUFF_ASPECT_OF_THE_CHEETAH  = 186257; -- Aspect of the Cheetah
-  SMARTBUFF_ASPECT_OF_THE_WILD     = 193530; -- Aspect of the Wild
+  SMARTBUFF_Volley              = 194386; -- Volley
+  SMARTBUFF_RapidFire           = 257044; -- Rapid Fire
+  SMARTBUFF_Camouflage          = 199483; -- Camouflage
+  SMARTBUFF_AspectOfTheCheetah  = 186257; -- Aspect of the Cheetah
+  SMARTBUFF_AspectOfTheWild     = 193530; -- Aspect of the Wild
   -- Hunter pets
-  SMARTBUFF_CALL_PET1          = 883;    -- Call Pet 1
-  SMARTBUFF_CALL_PET2          = 83242;  -- Call Pet 2
-  SMARTBUFF_CALL_PET3          = 83243;  -- Call Pet 3
-  SMARTBUFF_CALL_PET4          = 83244;  -- Call Pet 4
-  SMARTBUFF_CALL_PET5          = 83245;  -- Call Pet 5
+  SMARTBUFF_CallPet1          = 883;    -- Call Pet 1
+  SMARTBUFF_CallPet2          = 83242;  -- Call Pet 2
+  SMARTBUFF_CallPet3          = 83243;  -- Call Pet 3
+  SMARTBUFF_CallPet4          = 83244;  -- Call Pet 4
+  SMARTBUFF_CallPet5          = 83245;  -- Call Pet 5
   SMARTBUFF_REVIVE_PET         = 982;    -- Revive Pet
   SMARTBUFF_MEND_PET           = 136;    -- Mend Pet
   -- Hunter buff links
-  S.HunterAspects                 = { SMARTBUFF_ASPECT_OF_THE_CHEETAH, SMARTBUFF_ASPECT_OF_THE_WILD };
+  S.HunterAspects                 = { SMARTBUFF_AspectOfTheCheetah, SMARTBUFF_AspectOfTheWild };
 
   -- Shaman
-  SMARTBUFF_LIGHTNING_SHIELD    = 192106; -- Lightning Shield
-  SMARTBUFF_WATER_SHIELD        = 52127;  -- Water Shield
-  SMARTBUFF_EARTH_SHIELD        = 974;    -- Earth Shield
-  SMARTBUFF_WATERWALKING        = 546;    -- Water Walking
-  SMARTBUFF_EMASTERY            = 16166;  -- Elemental Mastery
-  SMARTBUFF_ASCENDANCE_ELE      = 114050; -- Ascendance (Elemental)
-  SMARTBUFF_ASCENDANCE_ENH      = 114051; -- Ascendance (Enhancement)
-  SMARTBUFF_ASCENDANCE_RES      = 114052; -- Ascendance (Restoration)
-  SMARTBUFF_WINDFURY_WEAPON     = 33757;  -- Windfury Weapon
-  SMARTBUFF_FLAMETONGUE_WEAPON  = 318038; -- Flametongue Weapon
+  SMARTBUFF_LightningShield       = 192106; -- Lightning Shield
+  SMARTBUFF_WaterShield           = 52127;  -- Water Shield
+  SMARTBUFF_EarthShield           = 974;    -- Earth Shield
+  SMARTBUFF_WaterWalking          = 546;    -- Water Walking
+  SMARTBUFF_ElementalMastery      = 16166;  -- Elemental Mastery
+  SMARTBUFF_AscendaneElemental    = 114050; -- Ascendance (Elemental)
+  SMARTBUFF_AscendanceEnhancement = 114051; -- Ascendance (Enhancement)
+  SMARTBUFF_AscendanceRestoration = 114052; -- Ascendance (Restoration)
+  SMARTBUFF_WindfuryWeapon        = 33757;  -- Windfury Weapon
+  SMARTBUFF_FlametongueWeapon     = 318038; -- Flametongue Weapon
 
   -- Shaman buff links
-  S.ChainShamanShield           = { SMARTBUFF_LIGHTNING_SHIELD, SMARTBUFF_WATER_SHIELD, SMARTBUFF_EARTH_SHIELD };
+  S.ShamanShields           = { SMARTBUFF_LightningShield, SMARTBUFF_WaterShield, SMARTBUFF_EarthShield };
 
   -- Warrior
   SMARTBUFF_BattleShout         = 6673;   -- Battle Shout
@@ -1056,8 +1056,7 @@ function SMARTBUFF_InitSpellIDs()
                                     160003  -- Savage Vigor
                                   };
 
-  S.ShoutBuffAuras                      = { SMARTBUFF_HornOfWinter, SMARTBUFF_BattleShout
-                                  };
+  S.ShoutBuffAuras                      = { SMARTBUFF_HornOfWinter, SMARTBUFF_BattleShout };
 
   S.LinkMa                      = {
                                     93435,  -- Roar of Courage
@@ -1196,16 +1195,16 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "HUNTER") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      {SMARTBUFF_ASPECT_OF_THE_CHEETAH, -1, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
-      {SMARTBUFF_CAMOUFLAGE, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_RAPIDFIRE, 1.7/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_VOLLEY, 6/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ASPECT_OF_THE_WILD, 20/60, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
-      {SMARTBUFF_CALL_PET1, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(1))) },
-      {SMARTBUFF_CALL_PET2, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(2))) },
-      {SMARTBUFF_CALL_PET3, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(3))) },
-      {SMARTBUFF_CALL_PET4, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(4))) },
-      {SMARTBUFF_CALL_PET5, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(5))) },
+      {SMARTBUFF_AspectOfTheCheetah, -1, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
+      {SMARTBUFF_Camouflage, 1, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_RapidFire, 1.7/60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_Volley, 6/60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_AspectOfTheWild, 20/60, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
+      {SMARTBUFF_CallPet1, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(1))) },
+      {SMARTBUFF_CallPet2, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(2))) },
+      {SMARTBUFF_CallPet3, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(3))) },
+      {SMARTBUFF_CallPet4, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(4))) },
+      {SMARTBUFF_CallPet5, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(5))) },
     };
   end
 
@@ -1213,17 +1212,17 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "SHAMAN") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      {SMARTBUFF_LIGHTNING_SHIELD, 60, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainShamanShield},
-      {SMARTBUFF_WATER_SHIELD, 10, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainShamanShield},
-      {SMARTBUFF_EARTH_SHIELD, 10, SMARTBUFF_CONST_GROUP, {50,60,70,75,80}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_WINDFURY_WEAPON, 60, SMARTBUFF_CONST_WEAPON},
-      {SMARTBUFF_FLAMETONGUE_WEAPON, 60, SMARTBUFF_CONST_WEAPON},
+      {SMARTBUFF_LightningShield, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShamanShields},
+      {SMARTBUFF_WaterShield, 10, SMARTBUFF_CONST_SELF, nil, nil, S.ShamanShields},
+      {SMARTBUFF_EarthShield, 10, SMARTBUFF_CONST_GROUP, {50,60,70,75,80}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_WindfuryWeapon, 60, SMARTBUFF_CONST_WEAPON},
+      {SMARTBUFF_FlametongueWeapon, 60, SMARTBUFF_CONST_WEAPON},
       -- {SMARTBUFF_UNLEASHFLAME, 0.333, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ASCENDANCE_ELE, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ASCENDANCE_ENH, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ASCENDANCE_RES, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_EMASTERY, 0.5, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_WATERWALKING, 10, SMARTBUFF_CONST_GROUP, {28}}
+      {SMARTBUFF_AscendaneElemental, 0.25, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_AscendanceEnhancement, 0.25, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_AscendanceRestoration, 0.25, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_ElementalMastery, 0.5, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_WaterWalking, 10, SMARTBUFF_CONST_GROUP, {28}}
     };
   end
 
