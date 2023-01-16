@@ -41,7 +41,7 @@ S = SMARTBUFF_GLOBALS;
 local OG = nil; -- Options global
 local O  = nil; -- Options local
 
----@type {[string]: any, [Template]: any, [integer]: BuffInfo}
+---@type {[string]: any, [string]: any, [integer]: BuffInfo}
 local B  = nil; -- Buff settings local
 local _;
 
@@ -132,18 +132,14 @@ Enum.GroupOrder  = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 Enum.Font = { "NumberFontNormal", "NumberFontNormalLarge", "NumberFontNormalHuge", "GameFontNormal", "GameFontNormalLarge", "GameFontNormalHuge", "ChatFontNormal", "QuestFont", "MailTextFontNormal", "QuestTitleFont" };
 Enum.FontType = tInvert(Enum.Font)
 
----@alias Template "Solo"|"Party"|"LFR"|"Raid"|"Mythic Keystone"|"Battleground"|"Arena"|"Castle Nathria"|"Sanctum of Domination"|"Sepulcher of the First Ones"|"Vault of the Incarnates"|"Custom 1"|"Custom 2"|"Custom 3"|"Custom 4"|"Custom 5"
----@alias Classes "Druid"|"Hunter"|"Mage"|"Paladin"|"Priest"|"Rogue"|"Shaman"|"Warlock"|"Warrior"|"Death Knight"|"Monk"|"Demon Hunter"|"Evoker"|"Hunter Pet"|"Warlock Pet"|"Death Knight Pet"|"Tank"|"Healer"|"Damage Dealer"
----@alias Instances "Castle Nathria"|"Sanctum of Domination"|"Sepulcher of the First Ones"|"Vault of the Incarnates"
-
----@type string|nil
-local CurrentUnit = nil;
----@type integer|nil
-local CurrentSpell = nil;
----@type Template
-local CurrentTemplate = nil;
+---@type string
+local CurrentUnit = "";
 ---@type integer
-local CurrentSpec = nil;
+local CurrentSpell = 0;
+---@type string
+local CurrentTemplate = "";
+---@type integer
+local CurrentSpec = 0;
 
 local ImgSB       = "Interface\\Icons\\Spell_Nature_Purge";
 local ImgIconOn   = "Interface\\AddOns\\SmartBuff\\Icons\\MiniMapButtonEnabled";
@@ -408,7 +404,7 @@ end
 -- return current buff template
 ---@return string
 local function CT()
-  return CurrentTemplate;
+  return CurrentTemplate or "";
 end
 
 ---@param buffID BuffID
@@ -734,7 +730,7 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
         end
       end
     end
-    CurrentUnit = nil;
+    CurrentUnit = "";
 
   elseif (event == "UNIT_SPELLCAST_SUCCEEDED") then
     if (arg1 and arg1 == "player") then
@@ -766,8 +762,8 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
         BuffTimer[unit][spell] = GetTime();
         if (name ~= nil) then
           SMARTBUFF_AddMsg(name .. ": " .. GetBuffInfo(spell).Name .. " " .. SMARTBUFF_MSG_BUFFED);
-          CurrentUnit = nil;
-          CurrentSpell = nil;
+          CurrentUnit = ""
+          CurrentSpell = 0;
         end
       end
 
@@ -813,7 +809,7 @@ end
 
 ---@param force? boolean
 function SMARTBUFF_Ticker(force)
-  if (force or GetTime() > tTicker + 1) then
+  if (force or GetTime() > TimeTicker + 1) then
     Ticker = GetTime();
 
     if (IsSyncReq or TimeTicker > TimeSync + 10) then
@@ -886,6 +882,8 @@ Enum.SmartBuffGroup = {
   Custom5 = 13
 }
 
+
+
 -- Set the current template and create an array of units
 function SMARTBUFF_SetTemplate()
 
@@ -893,6 +891,7 @@ function SMARTBUFF_SetTemplate()
   if (SmartBuffOptionsFrame:IsVisible()) or not O.AutoSwitchTemplate then return end
 
   local _, instanceType, difficultyID, _, _, _, _, _, _, lfgDungeonID = GetInstanceInfo()
+  ---@type string
   local newTemplate = SMARTBUFF_TEMPLATES[Enum.GroupType.Solo];
   if IsInRaid() then
     newTemplate = SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Raid];
@@ -940,7 +939,8 @@ function SMARTBUFF_SetTemplate()
   -- Raid Setup
   if (newTemplate == (SMARTBUFF_TEMPLATES[Enum.SmartBuffGroup.Raid])) then
     ClassGroups = { };
-
+    local foundPlayer = false
+    local j = 0;
     for n = 1, MaxRaid, 1 do
       local name, _, subgroup = GetRaidRosterInfo(n);
       if (name) then
@@ -960,7 +960,6 @@ function SMARTBUFF_SetTemplate()
         SmartBuff_AddToUnitList(2, raidUnit, subgroup);
 
         if (SMARTBUFF_Options.ToggleGrp[subgroup]) then
-          local s = "";
           if (name == UnitName(raidUnit)) then
             if (Groups[subgroup] == nil) then
               Groups[subgroup] = { };
@@ -1288,8 +1287,8 @@ function SMARTBUFF_SanityCheck()
     [5]  = {["LOOTING"]           = LootFrame:IsVisible()},
     [6]  = {["IN_CITY"]           = not O.BuffInCities and IsResting() and not UnitIsPVP("player")},
     [7]  = {["MOUNTED"]           = UnitOnTaxi("player") or
-                                    (IsMounted() and not (PlayerClass == "PALADIN" and C_UnitAuras.GetAuraDataByAuraInstanceID("player", SMARTBUFF_CRUSADER_AURA))
-                                    and not (PlayerClass == "DEATHKNIGHT" and C_UnitAuras.GetAuraDataByAuraInstanceID("player", SMARTBUFF_PATHOFFROST)))},
+                                    (IsMounted() and not (PlayerClass == "PALADIN" and C_UnitAuras.GetAuraDataByAuraInstanceID("player", SMARTBUFF_CrusaderAura))
+                                    and not (PlayerClass == "DEATHKNIGHT" and C_UnitAuras.GetAuraDataByAuraInstanceID("player", SMARTBUFF_PathOfFrost)))},
     [8]  = {["IN_VEHICLE"]        = UnitInVehicle("player") or UnitHasVehicleUI("player")},
     [9]  = {["IN_PET_BATTLE"]      = C_PetBattles.IsInBattle()},
     [10] = {["FLYING"]            = IsFlying()},
@@ -1821,7 +1820,7 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
   local template = B[CS()][CT()][b.BuffID];---@type BuffTemplate
   local auraID = 0; ---@type SpellID
 
-  ---@type Enum.Range
+  ---@enum Range
   Enum.Range = {
     Invalid = nil,
     OutOfRange = 0,
@@ -2133,8 +2132,8 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
 
   -- Cast state ---------------------------------------------------------------------------------------
   if (state == Enum.State.STATE_START_BUFF or state == Enum.State.STATE_END_BUFF) then
-    CurrentUnit = nil;
-    CurrentSpell = nil;
+    CurrentUnit = "";
+    CurrentSpell = 0;
     --try to apply weapon buffs on main/off hand
     if (b.Type == SMARTBUFF_CONST_INV) then
       if (b.InventorySlot and (b.HandType ~= "" or b.HasBuffExpired)) then
@@ -2193,8 +2192,8 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
 
     -- Check state ---------------------------------------------------------------------------------------
   elseif (state == Enum.State.STATE_REBUFF_CHECK) then
-    CurrentUnit = nil;
-    CurrentSpell = nil;
+    CurrentUnit = "";
+    CurrentSpell = 0;
     if (b.Target == "") then b.BuffTarget = b.Target; end
 
     if b.BuffID or b.ActionType == ACTION_TYPE_ITEM then
@@ -2365,7 +2364,7 @@ end
 -- weapon, `false` otherwise.
 ---@param b BuffInfo
 ---@return true
----@return WeaponTypes weaponTypes
+---@return WeaponTypes Enum.WeaponTypes
 ---@overload fun(b: BuffInfo): false
 function SMARTBUFF_CanApplyWeaponBuff(b)
   if (string.find(b.Name, SMARTBUFF_WEAPON_SHARP_PATTERN)) then
@@ -2388,6 +2387,7 @@ function SMARTBUFF_CanApplyWeaponBuff(b)
       --SMARTBUFF_AddMsgD(weapon);
       if (string.find(itemSubType, weaponType)) then
         --SMARTBUFF_AddMsgD("Can apply " .. IDToString(buffID) .. " on " .. itemSubType);
+---@diagnostic disable-next-line: return-type-mismatch
         return true, weaponType;
       end
   end
@@ -2531,7 +2531,7 @@ function SMARTBUFF_GetRefreshBuffInfo(b, target)
             local auraInfo = C_UnitAuras.GetAuraDataByAuraInstanceID(target, chainID)
             if auraInfo.source == "player" and SMARTBUFF_CheckLinkedAuras(target, chainID, b.Type, b.Links) then
               --SMARTBUFF_AddMsgD("Chained buff found: "..chainID..", "..auraInfo.timeLeft
-              return Enum.Result.SUCCESS, i, chainID, auraInfo.timeLeft, -1;
+              return Enum.Result.SUCCESS, i, chainID, auraInfo.expirationTime, -1;
             end
           elseif chainID == b.BuffID then
             return b.BuffID
@@ -2615,7 +2615,7 @@ function SMARTBUFF_CheckChainedAuras(unit, aura, chain)
         local auraInfo = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, auraID)
         if (auraInfo) and auraInfo.source == "player" then
           SMARTBUFF_AddMsgD("Chained buff found: " .. auraID);
-          return 0, index, aura, auraInfo.timeLeft, -1;
+          return 0, index, aura, auraInfo.expirationTime, -1;
         end
       end
     end
@@ -4109,8 +4109,8 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
 
     SMARTBUFF_AddMsgD("next buff check");
     TimeAutoBuff = GetTime();
-    CurrentUnit = nil;
-    CurrentSpell = nil;
+    CurrentUnit = "";
+    CurrentSpell = 0;
 
     local b = {} ---@type BuffInfo
     local result = Enum.Result.GENERIC_ERROR

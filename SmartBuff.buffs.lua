@@ -1,7 +1,7 @@
  local _;
 S = SMARTBUFF_GLOBALS;
 
-SMARTBUFF_PLAYERCLASS = nil;
+SMARTBUFF_PLAYERCLASS = "";
 SMARTBUFF_CLASSBUFFS = {};
 
 -- buff categories
@@ -599,7 +599,7 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_DRUID_MOONKIN       = 24858;  -- Moonkin Form
   --SMARTBUFF_DRUID_MKAURA        = 24907;  -- Moonkin Aura
   SMARTBUFF_DRUID_TRACK         = 5225;   -- Track Humanoids
-  SMARTBUFF_MARK_OF_THE_WILD                = 1126;   -- Mark of the Wild
+  SMARTBUFF_MarkOfTheWild                = 1126;   -- Mark of the Wild
   SMARTBUFF_BARKSKIN            = 22812;  -- Barkskin
   SMARTBUFF_TIGERS_FURY          = 5217;   -- Tiger's Fury
   SMARTBUFF_SAVAGE_ROAR          = 52610;  -- Savage Roar
@@ -607,7 +607,7 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_DRUID_BEAR          = 5487;   -- Bear Form
 
   -- Priest
-  SMARTBUFF_POWER_WORD_FORTITUDE  = 21562;  -- Power Word: Fortitude
+  SMARTBUFF_PowerWordFortitude  = 21562;  -- Power Word: Fortitude
   SMARTBUFF_POWER_WORD_SHIELD     = 17;     -- Power Word: Shield
   --SMARTBUFF_FEARWARD          = 6346;   -- Fear Ward
   SMARTBUFF_RENEW               = 139;    -- Renew
@@ -624,8 +624,8 @@ function SMARTBUFF_InitSpellIDs()
                                   };
 
   -- Mage
-  SMARTBUFF_ARCANE_INTELLECT     = 1459;   -- Arcane Intellect
-  SMARTBUFF_DALARAN_BRILLIANCE   = 61316;  -- Dalaran Brilliance
+  SMARTBUFF_ArcaneIntellect     = 1459;   -- Arcane Intellect
+  SMARTBUFF_DalaranBrilliance   = 61316;  -- Dalaran Brilliance
   SMARTBUFF_FROST_ARMOR          = 7302;   -- Frost Armor
   SMARTBUFF_MAGE_ARMOR           = 6117;   -- Mage Armor
   --SMARTBUFF_MOLTENARMOR         = 30482; -- Molten Armor
@@ -650,9 +650,7 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_CONJURE_MANA_GEM            = 759;    -- Conjure Mana Gem
 
   -- Mage buff links
-  S.MageArmorAuras              = { SMARTBUFF_FROST_ARMOR, SMARTBUFF_MAGE_ARMOR,
-                                    SMARTBUFF_MOLTEN_ARMOR
-                                  };
+  S.MageArmorAuras              = { SMARTBUFF_FROST_ARMOR, SMARTBUFF_MAGE_ARMOR };
 
   -- Warlock
   SMARTBUFF_AMPLIFY_CURSE        = 328774; -- Amplify Curse
@@ -712,16 +710,16 @@ function SMARTBUFF_InitSpellIDs()
   S.ChainShamanShield           = { SMARTBUFF_LIGHTNING_SHIELD, SMARTBUFF_WATER_SHIELD, SMARTBUFF_EARTH_SHIELD };
 
   -- Warrior
-  SMARTBUFF_BATTLE_SHOUT         = 6673;   -- Battle Shout
-  --SMARTBUFF_COMMANDINGSHOUT    = 97462;    -- Reallying Cry
-  SMARTBUFF_BERSERKER_RAGE       = 18499;  -- Berserker Rage
-  SMARTBUFF_BATTLE_STANCE        = 386164; -- Battle Stance
-  SMARTBUFF_DEFENSIVE_STANCE     = 197690; -- Defensive Stance
-  SMARTBUFF_SHIELD_BLOCK         = 2565;   -- Shield Block
+  SMARTBUFF_BattleShout         = 6673;   -- Battle Shout
+  SMARTBUFF_RallyingCry         = 97462;  -- Rallying Cry
+  SMARTBUFF_BerserkerRage      = 18499;  -- Berserker Rage
+  SMARTBUFF_BattleStance       = 386164; -- Battle Stance
+  SMARTBUFF_DefensiveStance    = 197690; -- Defensive Stance
+  SMARTBUFF_ShieldBlock        = 2565;   -- Shield Block
 
   -- Warrior buff links
-  S.ChainWarriorStance          = { SMARTBUFF_BATTLE_STANCE, SMARTBUFF_DEFENSIVE_STANCE };
-  S.ChainWarriorShout           = { SMARTBUFF_BATTLE_SHOUT, SMARTBUFF_COMMANDING_SHOUT };
+  S.ChainWarriorStance          = { SMARTBUFF_BattleStance, SMARTBUFF_DefensiveStance };
+  S.ChainWarriorShout           = { SMARTBUFF_BattleShout, SMARTBUFF_RallyingCry };
 
   -- Rogue
   SMARTBUFF_STEALTH             = 1784;   -- Stealth
@@ -744,7 +742,7 @@ function SMARTBUFF_InitSpellIDs()
   -- Rogue buff links
   S.ChainRoguePoisonsLethal     = {
                                     SMARTBUFF_DEADLYPOISON, SMARTBUFF_WOUNDPOISON,
-                                    SMARTBUFF_INSTANTPOISON, --[[ SMARTBUFF_AGONIZINGPOISON, ]]
+                                    SMARTBUFF_INSTANTPOISON,
                                     SMARTBUFF_AMPLIFYPOISON
                                   };
   S.ChainRoguePoisonsNonLethal  = {
@@ -753,47 +751,42 @@ function SMARTBUFF_InitSpellIDs()
                                   };
 
   -- Paladin
-  SMARTBUFF_RIGHTEOUS_FURY       = 25780;  -- Righteous Fury
-  --SMARTBUFF_HOLYSHIELD          = 20925;  -- Sacred Shield
-  SMARTBUFF_BLESSING_OF_KINGS                 = 203538; -- Greater Blessing of Kings"
-  -- SMARTBUFF_BLESSING_OF_MIGHT                 = 203528; -- Greater Blessing of Might
-  SMARTBUFF_BLESSING_OF_WISDOM                 = 203539; -- Greater Blessing of Wisdom
-  SMARTBUFF_BLESSING_OF_FREEDOM                 = 1044;   -- Blessing of Freedom"
-  SMARTBUFF_BLESSING_OF_PROTECTION                 = 1022;   -- Blessing of Protection
-  SMARTBUFF_BLESSING_OF_SALVATION               = 204013; -- Blessing of Salvation
-  -- SMARTBUFF_SEAL_OF_JUSTICE           = 20164;  -- Seal of Justice
-  -- SMARTBUFF_SEAL_OF_INSIGHT           = 20165;  -- Seal of Insight
-  -- SMARTBUFF_SEAL_OF_RIGHTEOUSNESS     = 20154;  -- Seal of Righteousness
-  -- SMARTBUFF_SEAL_OF_TRUTH             = 31801;  -- Seal of Truth
-  -- SMARTBUFF_SEAL_OF_COMMAND           = 105361; -- Seal of Command
-  SMARTBUFF_AVENGING_WRATH       = 31884;  -- Avenging Wrath
-  SMARTBUFF_BEACON_OF_LIGHT       = 53563;  -- Beacon of Light
-  SMARTBUFF_BEACON_OF_FAITH        = 156910; -- Beacon of Faith
-  SMARTBUFF_CRUSADER_AURA        = 32223;  -- Crusader Aura
-  SMARTBUFF_DEVOTION_AURA        = 465;    -- Devotion Aura
-  SMARTBUFF_RETRIBUTION_AURA     = 183435; -- Retribution Aura
+  SMARTBUFF_RighteousFury       = 25780;  -- Righteous Fury
+  --SMARTBUFF_HOLYSHIELD         = 20925;  -- Sacred Shield
+  SMARTBUFF_BlessingOfKings      = 203538; -- Greater Blessing of Kings
+  -- SMARTBUFF_BLESSINGOFMIGHT   = 203528; -- Greater Blessing of Might
+  SMARTBUFF_BlessingOfWisdom     = 203539; -- Greater Blessing of Wisdom
+  SMARTBUFF_BlessingOfFreedom    = 1044;   -- Blessing of Freedom"
+  SMARTBUFF_BlessingOfProtection = 1022;   -- Blessing of Protection
+  SMARTBUFF_BlessingOfSalvation  = 204013; -- Blessing of Salvation
+  -- SMARTBUFF_SEALOFJUSTICE           = 20164;  -- Seal of Justice
+  -- SMARTBUFF_SEALOFINSIGHT           = 20165;  -- Seal of Insight
+  -- SMARTBUFF_SEALOFRIGHTEOUSNESS     = 20154;  -- Seal of Righteousness
+  -- SMARTBUFF_SEALOFTRUTH             = 31801;  -- Seal of Truth
+  -- SMARTBUFF_SEALOFCOMMAND           = 105361; -- Seal of Command
+  SMARTBUFF_AvengingWrath       = 31884;  -- Avenging Wrath
+  SMARTBUFF_BeaconOfLight       = 53563;  -- Beacon of Light
+  SMARTBUFF_BeaconOfFaith       = 156910; -- Beacon of Faith
+  SMARTBUFF_CrusaderAura        = 32223;  -- Crusader Aura
+  SMARTBUFF_DevotionAura        = 465;    -- Devotion Aura
+  SMARTBUFF_RetributionAura     = 183435; -- Retribution Aura
   -- Paladin buff links
-  S.PaladinAuras            = { SMARTBUFF_DEVOTION_AURA, SMARTBUFF_RETRIBUTION_AURA };
-  S.PaladinSeals            = { SMARTBUFF_SEAL_OF_COMMAND, --[[ SMARTBUFF_SOTRUTH, ]]
-                                    SMARTBUFF_SEAL_OF_JUSTICE, --[[ SMARTBUFF_SOINSIGHT ,]]
-                                    SMARTBUFF_SEAL_OF_RIGHTEOUSNESS
-                                  };
-  S.PaladinBlessings        = { SMARTBUFF_BLESSING_OF_KINGS, SMARTBUFF_BLESSING_OF_MIGHT, SMARTBUFF_BLESSING_OF_WISDOM };
+  S.PaladinAuras            = { SMARTBUFF_DevotionAura, SMARTBUFF_RetributionAura };
+  S.PaladinSeals            = { };
+  S.PaladinBlessings        = { SMARTBUFF_BlessingOfKings, SMARTBUFF_BlessingOfWisdom };
 
   -- Death Knight
   SMARTBUFF_DANCING_RUNE_WEAPON           = 49028; -- Dancing Rune Weapon
   --SMARTBUFF_BLOODPRESENCE       = 48263; -- Blood Presence
   --SMARTBUFF_FROSTPRESENCE       = 48266; -- Frost Presence
   --SMARTBUFF_UNHOLYPRESENCE      = 48265; -- Unholy Presence"
-  SMARTBUFF_PATHOFFROST         = 3714;  -- Path of Frost
+  SMARTBUFF_PathOfFrost         = 3714;  -- Path of Frost
   --SMARTBUFF_BONESHIELD          = 49222; -- Bone Shield
-  SMARTBUFF_HORNOFWINTER        = 57330; -- Horn of Winter
+  SMARTBUFF_HornOfWinter        = 57330; -- Horn of Winter
   SMARTBUFF_RAISEDEAD           = 46584; -- Raise Dead
   --SMARTBUFF_POTGRAVE            = 155522; -- Power of the Grave" (P)
   -- Death Knight buff links
-  S.ChainDKPresence             = { --[[ SMARTBUFF_BLOODPRESENCE, SMARTBUFF_FROSTPRESENCE,
-                                    SMARTBUFF_UNHOLYPRESENCE ]]
-                                  };
+  S.ChainDKPresence             = { };
 
   -- Monk
   --SMARTBUFF_LOTWT               = 116781; -- Legacy of the White Tiger
@@ -808,7 +801,7 @@ function SMARTBUFF_InitSpellIDs()
   -- Monk buff links
   S.ChainMonkStatue             = { SMARTBUFF_BLACKOX, SMARTBUFF_JADESERPENT };
   S.ChainMonkStance             = { SMARTBUFF_SOTFIERCETIGER, SMARTBUFF_SOTSTURDYOX,
-                                    --[[ SMARTBUFF_SOTWISESERPENT, SMARTBUFF_SOTSPIRITEDCRANE ]]
+                                -- SMARTBUFF_SOTWISESERPENT, SMARTBUFF_SOTSPIRITEDCRANE
                                   };
 
   -- Evoker
@@ -1049,34 +1042,31 @@ function SMARTBUFF_InitSpellIDs()
   --end
 
   -- Buff map
-  S.StatBuffAuras                     = { SMARTBUFF_BLESSING_OF_KINGS, SMARTBUFF_MARK_OF_THE_WILD, --[[ SMARTBUFF_LOTE,
-                                    SMARTBUFF_LOTWT, ]]
+  S.StatBuffAuras                     = { SMARTBUFF_BlessingOfKings, SMARTBUFF_MarkOfTheWild,
                                     159988, -- Bark of the Wild
                                     203538, -- Greater Blessing of Kings
                                     90363,  -- Embrace of the Shale Spider
                                     160077  -- Strength of the Earth
                                   };
 
-  S.StamBuffAuras                     = { SMARTBUFF_POWER_WORD_FORTITUDE, SMARTBUFF_COMMANDING_SHOUT,
-                                    --[[ SMARTBUFF_BLOODPACT, ]]
+  S.StamBuffAuras                     = { SMARTBUFF_PowerWordFortitude, SMARTBUFF_RallyingCry,
                                     50256,  -- Invigorating Roar
                                     90364,  -- Qiraji Fortitude
                                     160014, -- Sturdiness
                                     160003  -- Savage Vigor
                                   };
 
-  S.ShoutBuffAuras                      = { SMARTBUFF_HORNOFWINTER, SMARTBUFF_BATTLE_SHOUT
+  S.ShoutBuffAuras                      = { SMARTBUFF_HornOfWinter, SMARTBUFF_BattleShout
                                   };
 
-  S.LinkMa                      = { SMARTBUFF_BLESSING_OF_MIGHT, --[[ SMARTBUFF_DRUID_MKAURA,
-                                    SMARTBUFF_GRACEOFAIR, SMARTBUFF_POTGRAVE, ]]
+  S.LinkMa                      = {
                                     93435,  -- Roar of Courage
                                     160039, -- Keen Senses
                                     128997, -- Spirit Beast Blessing
                                     160073  -- Plainswalking
                                   };
 
-  S.IntBuffAuras                     = { SMARTBUFF_BLESSING_OF_WISDOM, SMARTBUFF_ARCANE_INTELLECT, SMARTBUFF_DALARAN_BRILLIANCE };
+  S.IntBuffAuras                     = { SMARTBUFF_BlessingOfWisdom, SMARTBUFF_ArcaneIntellect, SMARTBUFF_DalaranBrilliance };
 
   -- S.LinkSp                      = { SMARTBUFF_DARKINTENT, SMARTBUFF_AB,
   --                                  SMARTBUFF_DALARANB, SMARTBUFF_STILLWATER
@@ -1120,7 +1110,7 @@ function SMARTBUFF_InitSpellList()
       {SMARTBUFF_DRUID_BEAR, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_DRUID_CAT, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_DRUID_TREE, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_MARK_OF_THE_WILD, 60, SMARTBUFF_CONST_GROUP, {1,10,20,30,40,50,60,70,80}, "HPET;WPET;DKPET"},
+      {SMARTBUFF_MarkOfTheWild, 60, SMARTBUFF_CONST_GROUP, {1,10,20,30,40,50,60,70,80}, "HPET;WPET;DKPET"},
       {SMARTBUFF_CENARION_WARD, 30/60, SMARTBUFF_CONST_GROUP, {1}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER"},
       {SMARTBUFF_BARKSKIN, 8/60, SMARTBUFF_CONST_FORCESELF},
       {SMARTBUFF_TIGERS_FURY, 10/60, SMARTBUFF_CONST_SELF, nil, SMARTBUFF_DRUID_CAT},
@@ -1133,7 +1123,7 @@ function SMARTBUFF_InitSpellList()
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
       {SMARTBUFF_SHADOWFORM, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_POWER_WORD_FORTITUDE, 60, SMARTBUFF_CONST_GROUP, {14}, "HPET;WPET;DKPET", S.StamBuffAuras},
+      {SMARTBUFF_PowerWordFortitude, 60, SMARTBUFF_CONST_GROUP, {14}, "HPET;WPET;DKPET", S.StamBuffAuras},
       {SMARTBUFF_LEVITATE, 10, SMARTBUFF_CONST_GROUP, {34}, "HPET;WPET;DKPET"},
       {SMARTBUFF_VAMPIRIC_EMBRACE, 15/60, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_POWER_WORD_SHIELD, 15/60, SMARTBUFF_CONST_GROUP, {6}, "MAGE;WARLOCK;ROGUE;PALADIN;WARRIOR;DRUID;ASPEC;SHAMAN;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
@@ -1148,8 +1138,8 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "MAGE") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      {SMARTBUFF_ARCANE_INTELLECT, 60, SMARTBUFF_CONST_GROUP, {1,14,28,42,56,70,80}, nil, S.IntBuffAuras},
-      {SMARTBUFF_DALARAN_BRILLIANCE, 60, SMARTBUFF_CONST_GROUP, {80,80,80,80,80,80,80}, nil, S.IntBuffAuras},
+      {SMARTBUFF_ArcaneIntellect, 60, SMARTBUFF_CONST_GROUP, {1,14,28,42,56,70,80}, nil, S.IntBuffAuras},
+      {SMARTBUFF_DalaranBrilliance, 60, SMARTBUFF_CONST_GROUP, {80,80,80,80,80,80,80}, nil, S.IntBuffAuras},
       -- {SMARTBUFF_TEMPORAL_SHIELD, 0.067, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_SUMMON_WATER_ELEMENTAL, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
       {SMARTBUFF_FROST_ARMOR, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.MageArmorAuras},
@@ -1241,12 +1231,12 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "WARRIOR") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      {SMARTBUFF_BATTLE_SHOUT, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras, S.ChainWarriorShout},
-      {SMARTBUFF_COMMANDING_SHOUT, 20, SMARTBUFF_CONST_SELF, nil, nil, S.StamBuffAuras, S.ChainWarriorShout},
-      {SMARTBUFF_BERSERKER_RAGE, 0.1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_SHIELD_BLOCK, 0.1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BATTLE_STANCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
-      {SMARTBUFF_DEFENSIVE_STANCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
+      {SMARTBUFF_BattleShout, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras, S.ChainWarriorShout},
+      {SMARTBUFF_RallyingCry, 20, SMARTBUFF_CONST_SELF, nil, nil, S.StamBuffAuras, S.ChainWarriorShout},
+      {SMARTBUFF_BerserkerRage, 0.1, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_ShieldBlock, 0.1, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_BattleStance, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
+      {SMARTBUFF_DefensiveStance, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
     };
   end
 
@@ -1277,24 +1267,24 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "PALADIN") then
     ---@type SpellList
     SMARTBUFF_CLASSBUFFS = {
-      {SMARTBUFF_RIGHTEOUS_FURY, 30, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_RighteousFury, 30, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_HOLYSHIELD, 0.166, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AVENGING_WRATH, 0.333, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BLESSING_OF_KINGS, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.StatBuffAuras},
-      {SMARTBUFF_BLESSING_OF_MIGHT, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.LinkMa},
-      {SMARTBUFF_BLESSING_OF_WISDOM, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.IntBuffAuras},
-      {SMARTBUFF_BLESSING_OF_FREEDOM, 0.1, SMARTBUFF_CONST_GROUP, {52}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BLESSING_OF_SALVATION, 0.1, SMARTBUFF_CONST_GROUP, {66}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BEACON_OF_LIGHT, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BEACON_OF_FAITH, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_CRUSADER_AURA, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DEVOTION_AURA, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
-      {SMARTBUFF_RETRIBUTION_AURA, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
-      --{SMARTBUFF_SOTRUTH, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainPaladinSeal},
-      {SMARTBUFF_SEAL_OF_RIGHTEOUSNESS, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
-      {SMARTBUFF_SEAL_OF_JUSTICE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
-      --{SMARTBUFF_SOINSIGHT, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainPaladinSeal},
-      {SMARTBUFF_SEAL_OF_COMMAND, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals}
+      {SMARTBUFF_AvengingWrath, 0.333, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_BlessingOfKings, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.StatBuffAuras},
+      -- {SMARTBUFF_BlessingOfMight, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.LinkMa},
+      {SMARTBUFF_BlessingOfWisdom, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.IntBuffAuras},
+      {SMARTBUFF_BlessingOfFreedom, 0.1, SMARTBUFF_CONST_GROUP, {52}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BlessingOfSalvation, 0.1, SMARTBUFF_CONST_GROUP, {66}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BeaconOfLight, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BeaconOfFaith, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_CrusaderAura, -1, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_DevotionAura, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
+      {SMARTBUFF_RetributionAura, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
+      -- {SMARTBUFF_SOTRUTH, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainPaladinSeal},
+      -- {SMARTBUFF_SealOfRighteousness, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
+      -- {SMARTBUFF_SealOfJustice, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
+      -- SMARTBUFF_SealOfInsight, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainPaladinSeal},
+      -- {SMARTBUFF_SealOfCommand, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals}
     };
   end
 
@@ -1306,10 +1296,10 @@ function SMARTBUFF_InitSpellList()
       --{SMARTBUFF_BLOODPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
       --{SMARTBUFF_FROSTPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
       --{SMARTBUFF_UNHOLYPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
-      {SMARTBUFF_HORNOFWINTER, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras},
+      {SMARTBUFF_HornOfWinter, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras},
       -- {SMARTBUFF_BONESHIELD, 5, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_RAISEDEAD, 1, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
-      {SMARTBUFF_PATHOFFROST, -1, SMARTBUFF_CONST_SELF}
+      {SMARTBUFF_PathOfFrost, -1, SMARTBUFF_CONST_SELF}
     };
   end
 

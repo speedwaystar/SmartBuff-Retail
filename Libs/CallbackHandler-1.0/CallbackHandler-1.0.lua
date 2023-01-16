@@ -89,7 +89,7 @@ function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAll
 	--   self with function ref, leads to functionref(...)
 	--   "addonId" (instead of self) with function ref, leads to functionref(...)
 	-- all with an optional arg, which, if present, gets passed as first argument (after self if present)
-	target[RegisterName] = function(self, eventname, method, ... --[[actually just a single arg]])
+	target[RegisterName] = function(self, eventname, method, ... )
 		if type(eventname) ~= "string" then
 			error("Usage: "..RegisterName.."(eventname, method[, arg]): 'eventname' - string expected.", 2)
 		end
