@@ -2329,7 +2329,7 @@ function SMARTBUFF_SetMissingBuffMessage(b, target)
       else
         s = target .. " " .. SMARTBUFF_MSG_NEEDS .. " " .. splashIcon
         if b.Type == SMARTBUFF_CONST_PET and SMARTBUFF_PLAYERCLASS == "HUNTER" then
-          s = s .. b.PetName
+          s = s .. string.format(CALL_PET_SPELL_NAME, b.PetName)
         else
           s = s .. b.Hyperlink
         end
@@ -4118,7 +4118,7 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
     if (not InCombatLockdown()) then
       result, b = SMARTBUFF_NextBuffCheck(state);
       if result == Enum.Result.SUCCESS then
-        printd("*** CASTING", b.Hyperlink, b.SplashIcon, b.Type, "on", b.Target, table.find(Enum.Result, result))
+        printd("*** CASTING", b.Hyperlink, b.SplashIcon, b.Type, "on", b.Target, table.find(Enum.Result, result),"ActionType -> ", b.ActionType)
         S.lastBuffType = b.Type;
         if b.Type == SMARTBUFF_CONST_TRACK then
           local trackingType = SMARTBUFF_GetTrackingType(b.BuffID)
@@ -4127,9 +4127,11 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
           if (b.EquipSlot and b.EquipSlot > 0 and b.Target == "player") then
             self:SetAttribute("type", "macro");
             self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot));
+            printd(self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot)));
             SMARTBUFF_AddMsgD("Weapon buff " .. b.Name .. ", " .. b.EquipSlot);
           else
             self:SetAttribute("spell", b.Name);
+            printd("SetAttribute: spell")
           end
           CurrentUnit = b.Target;
           CurrentSpell = b.BuffID;
@@ -4140,11 +4142,13 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
           if (b.EquipSlot and b.EquipSlot > 0) then
             self:SetAttribute("type", "macro");
             self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot));
+            printd("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot))
           end
         elseif (b.ActionType == "action" and b.EquipSlot) then
           self:SetAttribute("action", b.EquipSlot);
         else
-          SMARTBUFF_AddMsgD("Preclick: not supported actiontype -> " .. b.ActionType);
+          printd("Preclick: ActionType not supported -> " .. b.ActionType);
+          SMARTBUFF_AddMsgD("Preclick: ActionType not supported -> " .. b.ActionType);
         end
         TimeLastChecked = GetTime() - O.TimeBetweenChecks + gcSeconds;
       end
