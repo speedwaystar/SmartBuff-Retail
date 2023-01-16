@@ -178,7 +178,7 @@ end
 --- [View documents](command:extension.lua.doc?["en-us/51/manual.html/pdf-print"])
 ---
 function printd(...)
-	print("   ",addonName,"::",...)
+	print("   ",SMARTBUFF_TITLE,"::",...)
 end
 
 --- Prints the value of any global variable, table value, frame, function result, or any valid Lua expression. Output is color coded for easier reading. Tables display up to 30 values, the rest are skipped and a message is shown.

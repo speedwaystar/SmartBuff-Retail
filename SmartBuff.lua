@@ -10,7 +10,7 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_WATCH = "*.]"
+SMARTBUFF_WATCH = "water walking"
 ---@param b BuffInfo
 ---@param ... ...
 local function printw(b,...)
@@ -881,8 +881,6 @@ Enum.SmartBuffGroup = {
   Custom4 = 12,
   Custom5 = 13
 }
-
-
 
 -- Set the current template and create an array of units
 function SMARTBUFF_SetTemplate()
@@ -1869,7 +1867,7 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     [27] = {["BUFF_OUT_COMBAT"]   = UnitAffectingCombat("player") and template.BuffOutOfCombat},
     [28] = {["BUFF_SELF_ONLY"]    = template.BuffSelfOnly and not UnitIsUnit(b.Target, "player")},
     [29] = {["CLASS_BUFF_ONLY"]   = template[b.TargetClass] and UnitIsPlayer(b.Target)},
-    [30] = {["GROUP_BUFF_ONLY"]   = b.Type == SMARTBUFF_CONST_GROUP or b.Type == SMARTBUFF_CONST_ITEMGROUP},
+    [30] = {["GROUP_BUFF_ONLY"]   = false}, -- b.Type == SMARTBUFF_CONST_GROUP or b.Type == SMARTBUFF_CONST_ITEMGROUP},
     [31] = {["WRONG_DRUID_FORM"]  = PlayerClass == "DRUID" and b.BuffID == SMARTBUFF_DRUID_TRACK
                                     and (SMARTBUFF_ShapeshiftForm() and SMARTBUFF_ShapeshiftForm() ~= SMARTBUFF_DRUID_CAT)},
     -- weapon enchant failstates
@@ -4120,6 +4118,8 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
       if result == Enum.Result.SUCCESS then
         printd("*** CASTING", b.Hyperlink, b.SplashIcon, b.Type, "on", b.Target, table.find(Enum.Result, result),"ActionType -> ", b.ActionType)
         S.lastBuffType = b.Type;
+        self:SetAttribute("type", b.ActionType);
+        self:SetAttribute("unit", b.Target);
         if b.Type == SMARTBUFF_CONST_TRACK then
           local trackingType = SMARTBUFF_GetTrackingType(b.BuffID)
           C_Minimap.SetTracking(trackingType, true);
@@ -4131,7 +4131,6 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
             SMARTBUFF_AddMsgD("Weapon buff " .. b.Name .. ", " .. b.EquipSlot);
           else
             self:SetAttribute("spell", b.Name);
-            printd("SetAttribute: spell")
           end
           CurrentUnit = b.Target;
           CurrentSpell = b.BuffID;
