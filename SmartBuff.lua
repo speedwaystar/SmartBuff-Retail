@@ -10,7 +10,7 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_WATCH = "windfury weapon"
+SMARTBUFF_WATCH = "none"
 ---@param b BuffInfo
 ---@param ... ...
 local function printw(b,...)
@@ -351,20 +351,20 @@ local function GetBuffInfo(buffID)
 end
 
 ---Returns Hyperlink from `spell ID`
----@param spell Spell
+---@param spellID SpellID
 ---@return string Hyperlink
----@overload fun(spell:Spell):nil
-local function SpellToLink(spell)
-  return GetSpellLink(spell)
+---@overload fun(spellName:SpellName):nil
+local function SpellToLink(spellID)
+  return GetSpellLink(spellID)
 end
 
 ---Returns Hyperlink from `item ID`
----@param item Item
+---@param itemID ItemID
 ---@return string Hyperlink
----@overload fun(item:Item):nil
-local function ItemToLink(item)
-  if not GetSpellLink(item) then
-    return select(2, GetItemInfo(item))
+---@overload fun(itemName:ItemName):nil
+local function ItemToLink(itemID)
+  if not GetSpellLink(itemID) then
+    return select(2, GetItemInfo(itemID))
   end
 end
 
@@ -441,7 +441,7 @@ local function InitBuffTemplate(b, reset)
     template.BuffReminder = true;
     template.RebuffTimer = 0;
     template.ManaLimit = 0;
-    if (b.Type == SMARTBUFF_CONST_GROUP or b.Type == SMARTBUFF_CONST_ITEMGROUP) then
+    if (b.Type == SMARTBUFF_CONST_GROUP) then
       for i in pairs(Enum.Class) do
         --- init class arrays for any pet or role paramaters found
         template[Enum.Class[i]] = string.find(b.Targets, Enum.Class[i]);
@@ -539,17 +539,9 @@ function SMARTBUFF_OnLoad(self)
   table.insert(UISpecialFrames, "SmartBuffOptionsFrame");
   UIPanelWindows["SmartBuffOptionsFrame"] = nil;
 
-  SlashCmdList["SMARTBUFF"] = SMARTBUFF_command;
-  SLASH_SMARTBUFF1 = "/sbo";
-  SLASH_SMARTBUFF2 = "/sbuff";
-  SLASH_SMARTBUFF3 = "/smartbuff";
-  SLASH_SMARTBUFF3 = "/sb";
-
-  SlashCmdList["SMARTBUFFMENU"] = SMARTBUFF_OptionsFrame_Toggle;
-  SLASH_SMARTBUFFMENU1 = "/sbm";
-
-  SlashCmdList["SmartReloadUI"] = function(msg) ReloadUI(); end;
-  SLASH_SmartReloadUI1 = "/rui";
+  SlashCmdList_AddSlashCommand("SMARTBUFF", SMARTBUFF_command, "/sbo", "/sbuff", "/smartbuff", "/sb")
+  SlashCmdList_AddSlashCommand("SMARTBUFFMENU", SMARTBUFF_OptionsFrame_Toggle, "/sbm")
+  SlashCmdList_AddSlashCommand("SmartReloadUI", function(msg) ReloadUI(); end, "/rui")
 
   SMARTBUFF_InitSpellIDs();
 
@@ -623,7 +615,7 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
       if (O.InCombat) then
         for buffID, data in pairs(CombatBuffs) do
           if (data and data.Target and data.ActionType) then
-            if (data.Type == SMARTBUFF_CONST_SELF or data.Type == SMARTBUFF_CONST_FORCESELF or data.Type == SMARTBUFF_CONST_STANCE or data.Type == SMARTBUFF_CONST_CONJURED) then
+            if (data.Type == SMARTBUFF_CONST_SELF or data.Type == SMARTBUFF_CONST_FORCESELF or data.Type == SMARTBUFF_CONST_STANCE or data.Type == SMARTBUFF_CONST_CONJURE) then
               SmartBuff_KeyButton:SetAttribute("unit", nil);
             else
               SmartBuff_KeyButton:SetAttribute("unit", data.Target);
@@ -1068,7 +1060,7 @@ end
 local function PandarenFoodBonusMultiplier()
   local multiplier = 1
   local raceName, raceFile, raceID = UnitRace("player")
-  if type == SMARTBUFF_CONST_POTION and select(2, UnitRace("player")) == "Pandaren" then
+  if type == SMARTBUFF_CONST_FLASK and select(2, UnitRace("player")) == "Pandaren" then
     multiplier = 2
   end
   return multiplier
@@ -1091,6 +1083,7 @@ end
 -- Set the buff array
 function SMARTBUFF_InitBuffList()
   if (B == nil) then return; end
+  BuffsResetting = true;
 
   local n = 1;
   local ct = CurrentTemplate;
@@ -1110,8 +1103,7 @@ function SMARTBUFF_InitBuffList()
   table.wipe(BuffList);
   table.wipe(BuffIndex);
 
-  -- local buffTypes = { SMARTBUFF_SCROLL, SMARTBUFF_FOOD,  }
-  local buffTypes = { SMARTBUFF_CLASSBUFFS, SMARTBUFF_INVENTORY, SMARTBUFF_TRACKING, SMARTBUFF_FLASK }
+  local buffTypes = { SMARTBUFF_CLASS_BUFFS, SMARTBUFF_WEAPON_MODS, SMARTBUFF_TRACKING, SMARTBUFF_FLASKS, SMARTBUFF_SCROLLS, SMARTBUFF_FOOD }
 
   local b = {}
   for _, buffType in pairs(buffTypes) do
@@ -1130,12 +1122,6 @@ function SMARTBUFF_InitBuffList()
       end
     end
   end
-
-  -- for index, value in pairs(BuffIndex) do
-  --   b = Buffs[value]
-  --   printd(b.Hyperlink)
-  -- end
-
   InitBuffOrder();
 
   BuffsResetting = false;
@@ -1166,14 +1152,11 @@ function SMARTBUFF_NewBuff(spellList)
   if b.ActionType == ACTION_TYPE_SPELL then
     b.Name, _, b.Icon, b.MinRange, b.MaxRange = GetSpellInfo(b.BuffID)
     b.Hyperlink = GetSpellLink(b.BuffID) or b.Name; ---@type string
-
   else
-    b.Name, b.Hyperlink, _, _, b.MinLevel, b.ItemType, b.ItemSubType, _, b.EquipSlot, b.Icon, _, b.ItemTypeID, b.ItemSubTypeID = GetItemInfo(b.BuffID)
+    b.Name, b.Hyperlink, _, _, b.MinLevel, b.ItemType, b.ItemSubType, _, b.ItemEquipSlot, b.Icon, _, b.ItemTypeID, b.ItemSubTypeID = GetItemInfo(b.BuffID)
     b.Hyperlink = b.Hyperlink or b.Name;
   end
   b.SplashIcon = SMARTBUFF_SplashIcon(b.Icon, 16)
-
-  --b.MinLevel = buffData[Enum.SpellList.MinLevel]; -- CHECK: b.MinLevel is never used
 
   -- variable parameters
   local variable = spellList[Enum.SpellList.Variable]
@@ -1186,12 +1169,12 @@ function SMARTBUFF_NewBuff(spellList)
   elseif b.Type == SMARTBUFF_CONST_PET then
   -- for PET summoning, the pet name
     b.PetName = variable -- not used for anything else presently
-  elseif b.Type == SMARTBUFF_CONST_CONJURED then
+  elseif b.Type == SMARTBUFF_CONST_CONJURE then
     -- for CONJURED buffs, the ItemID of the conjured item
     b.ConjuredItemID = variable
   else
     -- by default, the AuraID of the aura created by the BuffID spell, if any
-    b.AuraID = variable -- CHECK: b.AurauID is not currently used
+    b.AuraID = variable
   end
 
   -- links and chain
@@ -1300,6 +1283,7 @@ end
 -- Updates the check timer, and returns false and toggles the action button if
 -- addon is not initialized or disabled, check timer has not expired, or one of
 -- a number of universal failstates is true (e.g. mounted, dead).
+---CHECK: not strictly necessary?
 ---@param state Enum.State
 ---@param force? boolean
 ---@return boolean preCheckPassed
@@ -1316,7 +1300,7 @@ function SMARTBUFF_PreCheck(state, force)
 
   local result = SMARTBUFF_SanityCheck()
   if result ~= Enum.Result.SUCCESS then
-    printd("PRECHECK failed: reason", result)
+    -- printd("PRECHECK failed: reason", result)
     if (state == Enum.State.STATE_START_BUFF) and result == "SMARTBUFF_DISABLED" then
       SMARTBUFF_AddMsg(SMARTBUFF_MSG_DISABLED);
       SmartBuff_KeyButton:Hide() -- can't buff, hide UI elements
@@ -1546,7 +1530,7 @@ function SMARTBUFF_SyncBuffTimers()
             end
             if (template.IsEnabled and b.Duration > 0) then
               if (b.Type ~= SMARTBUFF_CONST_SELF or (b.Type == SMARTBUFF_CONST_SELF and UnitIsUnit(unit, "player"))) then
-                --- TODO this doesn't seem right
+                --- CHECK this doesn't seem right
                 SMARTBUFF_SyncBuffTimer(unit, unit, BuffList[i]);
               end
             end
@@ -1775,8 +1759,8 @@ end
 ---@param b BuffInfo
 ---@param equipSlot Enum.InventorySlot
 local function checkWeaponBuff(b, equipSlot)
-  b.EquipSlot = equipSlot
-  b.InventoryItemID = GetInventoryItemID("player", b.EquipSlot);
+  b.ItemEquipSlot = equipSlot
+  b.InventoryItemID = GetInventoryItemID("player", b.ItemEquipSlot);
   if SMARTBUFF_CanApplyWeaponBuff(b) then
     return true
   end
@@ -1839,12 +1823,12 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     [10] = {["NO_SUCH_TARGET"]    = not UnitIsFriend("player", b.Target)},
     [11] = {["TARGET_DEAD"]       = UnitIsDeadOrGhost(b.Target) or UnitIsCorpse(b.Target)},
     [12] = {["TARGET_OFFLINE"]    = not ( UnitIsConnected(b.Target) and UnitIsVisible(b.Target) )},
-    [13] = {["SELF_BUFF_TYPE"]    = (b.Type == SMARTBUFF_CONST_SELF or b.Type == SMARTBUFF_CONST_INV
-                                    or b.Type == SMARTBUFF_CONST_TRACK) and not UnitIsUnit(b.Target, "player")},
+    [13] = {["SELF_ONLY_BUFF"]    = not (b.Type == SMARTBUFF_CONST_GROUP)
+                                    and not UnitIsUnit(b.Target, "player")},
     --- spell failstates
     [14] = {["OUT_OF_RANGE"]      = IsSpellInRange(b.Name,b.Target) == Enum.Range.OutOfRange},
-    [15] = {["SPELL_UNUSABLE"]    = not SafePack(IsUsableSpell(b.BuffID))[1]},
-    [16] = {["OUT_OF_MANA"]       = SafePack(IsUsableSpell(b.BuffID))[2]},
+    [15] = {["SPELL_UNUSABLE"]    = b.ActionType == ACTION_TYPE_SPELL and not select(1, IsUsableSpell(b.BuffID))},
+    [16] = {["OUT_OF_MANA"]       = select(2, IsUsableSpell(b.BuffID))},
     [17] = {["BUFF_SELF_NOT"]     = template.BuffSelfNot and UnitIsUnit(b.Target, "player")},
     --- pet failstates
     [18] = {["PET_DEAD"]          = b.Check == S.CheckPet or b.Check == S.CheckPetNeeded and UnitIsCorpse("pet")},
@@ -1864,13 +1848,15 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     [31] = {["WRONG_DRUID_FORM"]  = PlayerClass == "DRUID" and b.BuffID == SMARTBUFF_DRUID_TRACK
                                     and (SMARTBUFF_ShapeshiftForm() and SMARTBUFF_ShapeshiftForm() ~= SMARTBUFF_DRUID_CAT)},
     -- weapon enchant failstates
-    [32] = {["MAINHAND_BUFF"]     = (b.Type == SMARTBUFF_CONST_INV or b.Type == SMARTBUFF_CONST_WEAPON) and template.BuffMainHand
+    [32] = {["MAINHAND_BUFF"]     = (b.Type == SMARTBUFF_CONST_WEAPONMOD or b.Type == SMARTBUFF_CONST_ENCHANT) and template.BuffMainHand
                                     and select(1, GetWeaponEnchantInfo()) },
-    [33] = {["OFFHAND_BUFF"]      = (b.Type == SMARTBUFF_CONST_INV or b.Type == SMARTBUFF_CONST_WEAPON) and template.BuffOffHand
+    [33] = {["OFFHAND_BUFF"]      = (b.Type == SMARTBUFF_CONST_WEAPONMOD or b.Type == SMARTBUFF_CONST_ENCHANT) and template.BuffOffHand
                                     and select(5, GetWeaponEnchantInfo()) },
     [34] = {["ALREADY_TRACKING"]  = b.Type == SMARTBUFF_CONST_TRACK
                                     and select(3, C_Minimap.GetTrackingInfo(SMARTBUFF_GetTrackingType(b.BuffID))) },
-    [35] = {["WELL_FED"]          = b.Type == SMARTBUFF_CONST_FOOD and C_UnitAuras.GetPayerAuraBySpellID(SMARTBUFF_WELL_FED_AURA) ~= nil},
+    -- consumables
+    [35] = {["WELL_FED"]          = b.Type == SMARTBUFF_CONST_FOOD and C_UnitAuras.GetPlayerAuraBySpellID(SMARTBUFF_WellFedAura) ~= nil},
+    [36] = {["ALREADY_USED"]      = b.Type == SMARTBUFF_CONST_FLASK and C_UnitAuras.GetPlayerAuraBySpellID(b.AuraID) ~= nil}
 
     -- ["BUFFTYPE_ITEM"]     = SMARTBUFF_IsItem(b),
     -- ["BUFFTYPE_SPELL"]    = SMARTBUFF_IsSpell(b),
@@ -2010,7 +1996,7 @@ function SMARTBUFF_CanApplyWeaponBuff(b)
     Enum.WeaponTypes = SMARTBUFF_WEAPON_STANDARD;
   end
 
-  local itemLink = GetInventoryItemLink("player", b.EquipSlot);
+  local itemLink = GetInventoryItemLink("player", b.ItemEquipSlot);
   local _, _, itemCode = string.find(itemLink, "(%d+):");
   local _, _, _, _, _, itemType, itemSubType = GetItemInfo(itemCode);
 
@@ -2041,7 +2027,7 @@ function SMARTBUFF_checkBlacklist()
 end
 -- END SMARTBUFF_checkBlacklist
 
----TODO this is redundant. already checked for all these factors, unless it's for b.Aura?
+---CHECK this is redundant. already checked for all these factors, unless it's for b.Aura?
 -- Check if spell can be cast for the 900th time (not out of range, have mana, etc)
 ---@param b BuffInfo
 ---@return Enum.Result
@@ -2057,7 +2043,7 @@ function SMARTBUFF_CheckCast(b, target)
   end
 
   -- check if spell has duration
-  -- TODO: why are we recalculating this? can we not use the values already in b = BuffInfo?
+  -- CHECK: why are we recalculating this? can we not use the values already in b = BuffInfo?
   local _, duration = GetSpellCooldown(b.BuffID)
   if (not duration) then
     -- move on
@@ -2067,11 +2053,11 @@ function SMARTBUFF_CheckCast(b, target)
     return Enum.Result.ON_COOLDOWN;
   end
 
-  -- TODO also have already checked for out of range higher up no need to redo
+  -- CHECK also have already checked for out of range higher up no need to redo
   local IN_RANGE = 1;
   local OUT_OF_RANGE = 0;
   -- Rangecheck
-  if (b.Type == SMARTBUFF_CONST_GROUP or b.Type == SMARTBUFF_CONST_ITEMGROUP) then
+  if (b.Type == SMARTBUFF_CONST_GROUP) then
     -- takes spellName ONLY as argument
     if (SpellHasRange(GetSpellInfo(b.BuffID))) then
       -- also takes spellName ONLY as argument
@@ -2095,7 +2081,7 @@ end
 -- END SMARTBUFF_CheckCast
 
 -- Returns the `spell ID` to cast in order to refresh `buff`, or `nil` if none
----FIXME unclear if this is doing anything helpful
+---CHECK unclear if this is doing anything helpful
 ---@param b BuffInfo
 ---@param target Unit
 ---@return SpellID auraInstanceID
@@ -2134,7 +2120,7 @@ function SMARTBUFF_GetRefreshBuffInfo(b, target)
   -- Check linked buffs
   if (b.Links) then
     -- printd("checking links",b.Hyperlink,b.Type)
-    local food = SMARTBUFF_NewBuff({ SMARTBUFF_FOOD_SPELL, 60, SMARTBUFF_CONST_FOOD, nil, nil, { SMARTBUFF_FOOD_SPELL, SMARTBUFF_DRINK_SPELL } });
+    local food = SMARTBUFF_NewBuff({ SMARTBUFF_Food, 60, SMARTBUFF_CONST_FOOD, nil, nil, { SMARTBUFF_Food, SMARTBUFF_Drink } });
     if (not O.LinkSelfBuffCheck and b.Type == SMARTBUFF_CONST_SELF) then
       -- Do not check linked self buffs
     elseif (not O.LinkGrpBuffCheck and b.Type == SMARTBUFF_CONST_GROUP) then
@@ -2293,9 +2279,13 @@ end
 -- Return `true` if the player is eating
 ---@return boolean
 function SMARTBUFF_IsPicnic()
-  --unitaura = C_UnitAuras.GetPlayerAuraBySpellID(225737);
-  local food = SMARTBUFF_NewBuff({ SMARTBUFF_FOOD_SPELL, 60, SMARTBUFF_CONST_FOOD, nil, nil, { SMARTBUFF_FOOD_SPELL, SMARTBUFF_DRINK_SPELL } });
-  return not SMARTBUFF_GetRefreshBuffInfo (food, "player")
+   -- find any aura with localized name "food"|"drink"|"food & drink"
+  for _, foodAuraID in ipairs(S.GenericFoodAuras) do
+    if AuraUtil.FindAuraByName(select(1, GetSpellInfo(foodAuraID)), "player", "HELPFUL") ~= nil then
+      return true
+    end
+  end
+  return false
 end
 -- END SMARTBUFF_IsPicnic
 
@@ -2749,39 +2739,65 @@ function SMARTBUFF_ResetBindings()
   end
 end
 
+---Splits `string` into words unless quoted
+---## Example
+---```
+---dump(parseInputString('dog "brown mouse" cat tiger "colorful parrot"'))
+---[1]="dog",
+---[2]="brown mouse",
+---[3]="cat",
+---[4]="tiger",
+---[5]="colorful parrot"
+---```
+---[View Source](https://stackoverflow.com/a/34956073) ::
+---[Credit](https://stackoverflow.com/users/1847592/egor-skriptunoff)
+---@param str string
+---@return table
+local function parseInputString(str)
+  local t = {}
+  for quoted, non_quoted in ('""'..str):gmatch'(%b"")([^"]*)' do
+    table.insert(t, quoted ~= '""' and quoted:sub(2,-2) or nil)
+    for word in non_quoted:gmatch'%S+' do
+      table.insert(t, word)
+    end
+  end
+  return t
+end
+
 -- SmartBuff commandline menu ---------------------------------------------------------------------------------------
 function SMARTBUFF_command(msg)
   if (not SmartBuff_Initialized) then
     SMARTBUFF_AddMsgWarn(SMARTBUFF_VERS_TITLE .. " not initialized correctly!", true);
     return;
   end
-
-  if (msg == "toggle" or msg == "t") then
+  local args = parseInputString(msg)
+  dump(args)
+  if (args[1] == "toggle" or args[1] == "t") then
     SMARTBUFF_OToggle();
     SMARTBUFF_SetTemplate();
-  elseif (msg == "menu") then
+  elseif (args[1] == "menu") then
     SMARTBUFF_OptionsFrame_Toggle();
-  elseif (msg == "rbt") then
+  elseif (args[1] == "rbt") then
     SMARTBUFF_ResetBuffTimers();
-  elseif (msg == "sbt") then
+  elseif (args[1] == "sbt") then
     SMARTBUFF_ShowBuffTimers();
-  elseif (msg == "target") then
+  elseif (args[1] == "target") then
     if (SMARTBUFF_PreCheck(Enum.State.STATE_START_BUFF)) then
       SMARTBUFF_checkBlacklist();
       for _, buffID in pairs(B[CS()].Order) do
         SMARTBUFF_TryBuffUnit(GetBuffInfo(buffID), "target", 0, Enum.State.STATE_START_BUFF); --CHECK: this seems pointless
       end
     end
-  elseif (msg == "debug") then
+  elseif (args[1] == "debug") then
     O.Debug = SMARTBUFF_toggleBool(O.Debug, "Debug active = ");
-  elseif (msg == "open") then
+  elseif (args[1] == "open") then
     SMARTBUFF_OptionsFrame_Open(true);
-  elseif (msg == "sync") then
+  elseif (args[1] == "sync") then
     SMARTBUFF_SyncBuffTimers();
-  elseif (msg == "rb") then
+  elseif (args[1] == "rb") then
     SMARTBUFF_ResetBindings();
     SMARTBUFF_AddMsg("SmartBuff key and mouse bindings reset.", true);
-  elseif (msg == "rafp") then
+  elseif (args[1] == "rafp") then
     SmartBuffSplashFrame:ClearAllPoints();
     SmartBuffSplashFrame:SetPoint("CENTER", UIParent, "CENTER");
     SmartBuff_MiniMapButton:ClearAllPoints();
@@ -2790,7 +2806,7 @@ function SMARTBUFF_command(msg)
     SmartBuff_KeyButton:SetPoint("CENTER", UIParent, "CENTER");
     SmartBuffOptionsFrame:ClearAllPoints();
     SmartBuffOptionsFrame:SetPoint("CENTER", UIParent, "CENTER");
-  elseif (msg == "test") then
+  elseif (args[1] == "test") then
     -- Test Code ******************************************
     -- ****************************************************
     --local spellname = "Mind--numbing Poison";
@@ -2801,14 +2817,20 @@ function SMARTBUFF_command(msg)
     --SMARTBUFF_AddMsg("Modified: " .. spellname, true);
     -- ****************************************************
     -- ****************************************************
-  elseif (msg == "changes") then
+  elseif args[1] == "watch" then
+    if args[2] ~= nil then
+      SMARTBUFF_WATCH = args[2]
+      printd(args[2])
+    end
+    SMARTBUFF_AddMsg('Watching "'..(SMARTBUFF_WATCH)..'"')
+  elseif (args[1] == "changes") then
     SMARTBUFF_OptionsFrame_Open(true);
     SmartBuffWNF_lblText:SetText(SMARTBUFF_WHATSNEW);
     SmartBuffWNF:Show();
-  elseif (msg == "reload") then
+  elseif (args[1] == "reload") then
     SMARTBUFF_BuffOrderReset();
     SMARTBUFF_OptionsFrame_Open(true);
-  elseif (msg == "changelog") then
+  elseif (args[1] == "changelog") then
     SmartBuffWNF_lblText:SetText(SMARTBUFF_WHATSNEW);
     SmartBuffWNF:Show();
   else
@@ -3029,7 +3051,7 @@ function SmartBuff_BuffSetup_Show(i)
     SmartBuff_PlayerSetup:Hide();
     return;
   else
-    if (btype == SMARTBUFF_CONST_GROUP or btype == SMARTBUFF_CONST_ITEMGROUP) then
+    if (btype == SMARTBUFF_CONST_GROUP) then
       hidden = false;
     end
 
@@ -3091,7 +3113,7 @@ function SmartBuff_BuffSetup_Show(i)
     --SMARTBUFF_AddMsgD("Test Buff setup show 2");
 
     SmartBuff_BuffSetup_txtManaLimit:Hide();
-    if (BuffList[i].Type == SMARTBUFF_CONST_INV or BuffList[i].Type == SMARTBUFF_CONST_WEAPON) then
+    if (BuffList[i].Type == SMARTBUFF_CONST_WEAPONMOD or BuffList[i].Type == SMARTBUFF_CONST_ENCHANT) then
       SmartBuff_BuffSetup_cbMH:Show();
       SmartBuff_BuffSetup_cbOH:Show();
       SmartBuff_BuffSetup_cbRH:Hide();
@@ -3101,13 +3123,13 @@ function SmartBuff_BuffSetup_Show(i)
       SmartBuff_BuffSetup_cbRH:Hide();
       if (
           BuffList[i].Type ~= SMARTBUFF_CONST_FOOD and BuffList[i].Type ~= SMARTBUFF_CONST_SCROLL and
-              BuffList[i].Type ~= SMARTBUFF_CONST_POTION) then
+              BuffList[i].Type ~= SMARTBUFF_CONST_FLASK) then
         SmartBuff_BuffSetup_txtManaLimit:Show();
         --SMARTBUFF_AddMsgD("Show ManaLimit");
       end
     end
 
-    if (BuffList[i].Type == SMARTBUFF_CONST_GROUP or BuffList[i].Type == SMARTBUFF_CONST_ITEMGROUP) then
+    if (BuffList[i].Type == SMARTBUFF_CONST_GROUP) then
       SmartBuff_BuffSetup_cbSelf:Show();
       SmartBuff_BuffSetup_cbSelfNot:Show();
       SmartBuff_BuffSetup_btnPriorityList:Show();
@@ -3179,7 +3201,7 @@ function SmartBuff_BuffSetup_OnClick()
   Buff.RebuffTimer = SmartBuff_BuffSetup_RBTime:GetValue();
   _G[SmartBuff_BuffSetup_RBTime:GetName() .. "Text"]:SetText(Buff.RebuffTimer .. "\nsec");
 
-  if (BuffList[i].Type == SMARTBUFF_CONST_GROUP or BuffList[i].Type == SMARTBUFF_CONST_ITEMGROUP) then
+  if (BuffList[i].Type == SMARTBUFF_CONST_GROUP) then
     local n = 0;
     ---@type Widget
     local checkBox = nil;
@@ -3762,27 +3784,27 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
           local trackingType = SMARTBUFF_GetTrackingType(b.BuffID)
           C_Minimap.SetTracking(trackingType, true);
         elseif (b.ActionType == ACTION_TYPE_SPELL) then
-          if (b.EquipSlot and b.EquipSlot > 0 and b.Target == "player") then
+          if (b.ItemEquipSlot and b.ItemEquipSlot > 0 and b.Target == "player") then
             self:SetAttribute("type", "macro");
-            self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot));
-            printd(self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot)));
-            SMARTBUFF_AddMsgD("Weapon buff " .. b.Name .. ", " .. b.EquipSlot);
+            self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot));
+            printd(self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot)));
+            SMARTBUFF_AddMsgD("Weapon buff " .. b.Name .. ", " .. b.ItemEquipSlot);
           else
             self:SetAttribute("spell", b.Name);
           end
           CurrentUnit = b.Target;
           CurrentSpell = b.BuffID;
-        elseif (b.ActionType == ACTION_TYPE_ITEM and b.EquipSlot) then
+        elseif (b.ActionType == ACTION_TYPE_ITEM and b.ItemEquipSlot) then
+          printd(b.Name, b.Target or "NOTARGET", b.ItemEquipSlot or "NOEQUIPSLOT" )
           --- FIXME: macro cannot take Hyperlink text, which makes it impossible to select specific quality items
           self:SetAttribute("item", b.Name);
-          printd(b.EquipSlot)
-          if (b.EquipSlot and b.EquipSlot > 0) then
+          if (b.ItemEquipSlot ~= "" and b.ItemEquipSlot > 0) then
             self:SetAttribute("type", "macro");
-            self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot));
-            printd("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.EquipSlot))
+            self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot));
+            printd("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot))
           end
-        elseif (b.ActionType == "action" and b.EquipSlot) then
-          self:SetAttribute("action", b.EquipSlot);
+        elseif (b.ActionType == "action" and b.ItemEquipSlot) then
+          self:SetAttribute("action", b.ItemEquipSlot);
         else
           printd("Preclick: ActionType not supported -> " .. b.ActionType);
           SMARTBUFF_AddMsgD("Preclick: ActionType not supported -> " .. b.ActionType);
@@ -3793,7 +3815,7 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
   end
 end
 
--- TODO: add option to disable camera zooming on mousewheel
+-- CHECK: add option to disable camera zooming on mousewheel
 function SMARTBUFF_OnPostClick(self, button, down)
   if (SmartBuff_Initialized) then
     if (button) then

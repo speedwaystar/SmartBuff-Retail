@@ -168,7 +168,7 @@ end
 ---@param s any
 ---@param ... any
 function printf(s, ...)
-  print("   ",addonName,"::",string.format(s, ...))
+  print("   ",SMARTBUFF_TITLE,"::",string.format(s, ...))
 end
 
 -- Prints debug information to `stdout`. Receives any number of arguments,
@@ -187,3 +187,49 @@ end
 function dump(t, startkey)
   DevTools_Dump(t, startkey)
 end
+
+---Add slash commands.
+---## Example
+---The following snippets do the same thing.
+---```
+---SlashCmdList_AddSlashCommand('MYADDON_SLASHCMD', function(msg)
+---  DEFAULT_CHAT_FRAME:AddMessage(msg or 'nil')
+---end, 'myaddon', 'ma')
+---```
+---and
+---```
+---SlashCmdList['MYADDON_SLASHCMD'] = function(msg)
+---  DEFAULT_CHAT_FRAME:AddMessage(msg or 'nil')
+---end
+---SLASH_MYADDON_SLASHCMD1 = '/myaddon'
+---SLASH_MYADDON_SLASHCMD2 = '/ma'
+---```
+---## Code
+---```
+---function SlashCmdList_AddSlashCommand(name, func, ...)
+---  SlashCmdList[name] = func
+---  local command = ''
+---  for i = 1, select('#', ...) do
+---      command = select(i, ...)
+---      if strsub(command, 1, 1) ~= '/' then
+---          command = '/' .. command
+---      end
+---      _G['SLASH_'..name..i] = command
+---  end
+---end
+---```
+---@param name string Unique identifier (e.g. MYADDON_SLASHCMD)
+---@param func function The function (variable or actual function)
+---@param ... any A list of commands with or without the leading slash
+function SlashCmdList_AddSlashCommand(name, func, ...)
+  SlashCmdList[name] = func
+  local command = ''
+  for i = 1, select('#', ...) do
+      command = select(i, ...)
+      if string.sub(command, 1, 1) ~= '/' then
+          command = '/' .. command
+      end
+      _G['SLASH_'..name..i] = command
+  end
+end
+

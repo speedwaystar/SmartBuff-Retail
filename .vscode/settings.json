@@ -99,7 +99,9 @@
         "HelpPlate_Hide",
         "HelpPlate_Show",
         "UIParent",
-        "CALL_PET_SPELL_NAME"
+        "CALL_PET_SPELL_NAME",
+        "strsub",
+        "parseInputString"
     ],
     "Lua.diagnostics.disable": [
         // "unused-function",
