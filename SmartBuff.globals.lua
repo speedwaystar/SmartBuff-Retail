@@ -233,3 +233,22 @@ function SlashCmdList_AddSlashCommand(name, func, ...)
   end
 end
 
+-- Lua may not consider `""` and `0` to be `false` in condition tests, but I do.
+---@param value any
+---@return boolean
+function truthy(value)
+  return (value and value ~= 0 and value ~= "")
+end
+
+---Return an actually useful `tostring` value
+---@param s any
+---@return string
+function truthytostring(s)
+  if type(s) == "boolean" then return (s and "true" or "false")
+  elseif type(s) == "nil" then return "<nil>"
+  elseif s == "" then return '"<empty>"'
+  elseif type(s) == "string" then return '"'..s..'"'
+  elseif type(s) == "number" then return s.."."
+  elseif type(s) == "table" then dump(s) end
+  return s
+end

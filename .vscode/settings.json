@@ -101,7 +101,9 @@
         "UIParent",
         "CALL_PET_SPELL_NAME",
         "strsub",
-        "parseInputString"
+        "parseInputString",
+        "truthy",
+        "truthytostring"
     ],
     "Lua.diagnostics.disable": [
         // "unused-function",

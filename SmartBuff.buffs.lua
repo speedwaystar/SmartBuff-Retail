@@ -28,8 +28,9 @@ SMARTBUFF_CONST_GROUP     = "GROUP";      -- SpellID, semicolon delimited target
 SMARTBUFF_CONST_SELF      = "SELF";       -- spellID, BuffInfo.Check contains conditions to check
 SMARTBUFF_CONST_FORCESELF = "FORCESELF";  -- spellID cast while shapeshifted
 SMARTBUFF_CONST_TRACK     = "TRACK";      -- SpellID = tracking skill
-SMARTBUFF_CONST_ENCHANT   = "ENCHANT";    -- spellID = spells which buff an ItemEquipSlot
-SMARTBUFF_CONST_WEAPONMOD = "WEAPONMOD";  -- itemID = items which buff an itemEquipSlot
+SMARTBUFF_CONST_ENCHANT   = "ENCHANT";    -- spellID = spells which buff an InvSlot
+SMARTBUFF_CONST_WEAPONMOD = "WEAPONMOD";  -- itemID = items which buff INVSLOT_MAINHAND or INVSLOT_OFFHAND
+SMARTBUFF_CONST_MAINHAND  = "MAINHAND";   -- itemID = items which only buff INVSLOT_MAINHAND
 SMARTBUFF_CONST_FOOD      = "FOOD";       -- itemID = food
 ---CHECK i think SCROLL and POTION can be combined, unless one uses auras and the other doesn't?
 SMARTBUFF_CONST_SCROLL    = "SCROLL";     -- itemID = item without cooldown (scrolls, toys, augment runes)

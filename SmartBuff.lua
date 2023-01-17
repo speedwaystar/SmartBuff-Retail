@@ -911,9 +911,11 @@ function SMARTBUFF_SetTemplate()
     end
   end
 
-  SMARTBUFF_AddMsgD("Current tmpl: " .. CurrentTemplate or "nil" .. " - new tmpl: " .. newTemplate or "nil");
-  SMARTBUFF_AddMsg(SMARTBUFF_TITLE.." :: "..SMARTBUFF_OFT_AUTOSWITCHTMP .. ": " .. CurrentTemplate .. " -> " .. newTemplate);
-  CurrentTemplate = newTemplate;
+  if newTemplate ~= CurrentTemplate then
+    SMARTBUFF_AddMsgD("Current tmpl: " .. CurrentTemplate or "nil" .. " - new tmpl: " .. newTemplate or "nil");
+    SMARTBUFF_AddMsg(SMARTBUFF_TITLE.." :: "..SMARTBUFF_OFT_AUTOSWITCHTMP .. ": " .. CurrentTemplate .. " -> " .. newTemplate);
+    CurrentTemplate = newTemplate;
+  end
 
   if (SMARTBUFF_TEMPLATES[CurrentTemplate] == nil) then
     SMARTBUFF_InitBuffList();
@@ -1907,7 +1909,7 @@ end
 ---@param b BuffInfo
 ---@param target string
 function SMARTBUFF_SetMissingBuffMessage(b, target)
-  ---@type Widget
+  ---@type Frame
   local f = SmartBuffSplashFrame;
   -- show splash buffID message
   if (f and O.ToggleReminderSplash and not SmartBuffOptionsFrame:IsVisible()) then
@@ -2266,7 +2268,7 @@ function SMARTBUFF_GetBuffName(unit, index, line)
     --SmartBuffTooltip:SetOwner(SmartBuffFrame, "ANCHOR_NONE");
   SmartBuffTooltip:ClearLines();
   SmartBuffTooltip:SetUnitBuff(unit, i);
-  ---@type Widget
+  ---@type Frame
   local FontString = _G["SmartBuffTooltipTextLeft" .. line];
   if (FontString) then
     name = FontString:GetText();
@@ -3142,7 +3144,7 @@ function SmartBuff_BuffSetup_Show(i)
       SmartBuff_PlayerSetup:Hide();
     end
 
-    ---@type Widget
+    ---@type Frame
     local checkBox = nil;
     local btn = nil;
     n = 0;
@@ -3203,7 +3205,7 @@ function SmartBuff_BuffSetup_OnClick()
 
   if (BuffList[i].Type == SMARTBUFF_CONST_GROUP) then
     local n = 0;
-    ---@type Widget
+    ---@type Frame
     local checkBox = nil;
     for _ in pairs(Enum.Class) do
       n = n + 1;
@@ -3600,7 +3602,7 @@ end
 function SmartBuff_PS_Show(i)
   CurrentList = i;
   LastPlayer = -1;
-  ---@type Widget
+  ---@type Frame
   local obj = SmartBuff_PlayerSetup_Title;
   if (CurrentList == 1) then
     obj:SetText("Additional list");
@@ -3724,7 +3726,7 @@ function SMARTBUFF_OnClick(obj)
   SMARTBUFF_AddMsgD("OnClick");
 end
 
-S.LastBuffType = "";
+LastBuffType = "";
 --- Buff the target if scrollwheel clicked. This is a SmartBuff_KeyButton
 --  event, fired immediately before OnClick
 ---@param self self
@@ -3751,10 +3753,10 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
     --self:SetScript("OnClick", SMARTBUFF_OnClick);
 
     local duration = gcSeconds;
-    if (S.LastBuffType == "") then
+    if (LastBuffType == "") then
       duration = 0.8;
     end
-    --SMARTBUFF_AddMsgD("Last buff type: " .. S.LastBuffType .. ", set duration: " .. duration);
+    --SMARTBUFF_AddMsgD("Last buff type: " .. LastBuffType .. ", set duration: " .. duration);
 
     --if player is channeling, add some time
     if (UnitCastingInfo("player")) then
@@ -3776,32 +3778,34 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
     if (not InCombatLockdown()) then
       result, b = SMARTBUFF_NextBuffCheck(state);
       if result == Enum.Result.SUCCESS then
-        printd("*** CASTING", b.Hyperlink, b.SplashIcon, b.Type, "on", b.Target, table.find(Enum.Result, result),"ActionType -> ", b.ActionType)
-        S.lastBuffType = b.Type;
+        printd("*** CASTING", b.Hyperlink, b.SplashIcon, b.Type, "on", b.Target, table.find(Enum.Result, result), ":: ActionType", b.ActionType, ":: ItemEquipSlot", truthytostring(b.ItemEquipSlot))
+        LastBuffType = b.Type;
         self:SetAttribute("type", b.ActionType);
         self:SetAttribute("unit", b.Target);
         if b.Type == SMARTBUFF_CONST_TRACK then
           local trackingType = SMARTBUFF_GetTrackingType(b.BuffID)
           C_Minimap.SetTracking(trackingType, true);
         elseif (b.ActionType == ACTION_TYPE_SPELL) then
-          if (b.ItemEquipSlot and b.ItemEquipSlot > 0 and b.Target == "player") then
+          if (truthy(b.ItemEquipSlot) and b.Target == "player") then
             self:SetAttribute("type", "macro");
             self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot));
             printd(self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot)));
-            SMARTBUFF_AddMsgD("Weapon buff " .. b.Name .. ", " .. b.ItemEquipSlot);
+            SMARTBUFF_AddMsgD("Weapon enchant on " .. b.Name .. ", " .. b.ItemEquipSlot);
           else
             self:SetAttribute("spell", b.Name);
           end
           CurrentUnit = b.Target;
           CurrentSpell = b.BuffID;
-        elseif (b.ActionType == ACTION_TYPE_ITEM and b.ItemEquipSlot) then
-          printd(b.Name, b.Target or "NOTARGET", b.ItemEquipSlot or "NOEQUIPSLOT" )
+        elseif b.ActionType == ACTION_TYPE_ITEM then
+          if truthy(b.ItemEquipSlot) then
           --- FIXME: macro cannot take Hyperlink text, which makes it impossible to select specific quality items
           self:SetAttribute("item", b.Name);
-          if (b.ItemEquipSlot ~= "" and b.ItemEquipSlot > 0) then
-            self:SetAttribute("type", "macro");
-            self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot));
-            printd("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot))
+          self:SetAttribute("type", "macro");
+          self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot));
+          printd("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.ItemEquipSlot))
+          ---BUG: b.ActionType is never "action", even going back to the original SmartBuff code
+          else
+            printd("No ItemEquipSlot target for",b.Hyperlink)
           end
         elseif (b.ActionType == "action" and b.ItemEquipSlot) then
           self:SetAttribute("action", b.ItemEquipSlot);
@@ -3963,7 +3967,7 @@ end
 
 local StartY, EndY;
 local function CreateScrollButton(name, parent, cBtn, onClick, onDragStop)
-  ---@type Widget
+  ---@type Frame
   local btn = CreateFrame("CheckButton", name, parent, "UICheckButtonTemplate");
   btn:SetWidth(ScrBtnSize);
   btn:SetHeight(ScrBtnSize);
@@ -3990,7 +3994,7 @@ local function CreateScrollButton(name, parent, cBtn, onClick, onDragStop)
     );
   end
 
-  ---@type Widget
+  ---@type Frame
   local text = btn:CreateFontString(nil, nil, "GameFontNormal");
   text:SetJustifyH("LEFT");
   --text:SetAllPoints(btn);
@@ -4000,7 +4004,7 @@ local function CreateScrollButton(name, parent, cBtn, onClick, onDragStop)
   btn:SetFontString(text);
   btn:SetHighlightFontObject("GameFontHighlight");
 
-  ---@type Widget
+  ---@type Frame
   local highlight = btn:CreateTexture();
   --highlight:SetAllPoints(btn);
   highlight:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, -2);
@@ -4016,7 +4020,7 @@ end
 local function CreateScrollButtons(self, cBtn, sBtnName, onClick, onDragStop)
   local btn;
   for i = 1, MaxScrollButtons, 1 do
-    ---@type Widget
+    ---@type Frame
     btn = CreateScrollButton(sBtnName .. i, self, cBtn, onClick, onDragStop);
     btn:SetID(i);
     cBtn[i] = btn;
