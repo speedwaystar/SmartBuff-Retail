@@ -831,9 +831,10 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_WarStomp            = 20549; -- War Stomp
 
   -- Food
-  SMARTBUFF_FOOD_AURA           = 46899; -- Well Fed
+  SMARTBUFF_WELL_FED_AURA       = 46899; -- Well Fed
   SMARTBUFF_FOOD_SPELL          = 433;   -- Food
   SMARTBUFF_DRINK_SPELL         = 430;   -- Drink
+  S.FoodLinks = {192002, 185710, 396921, 225737}
 
   -- Misc
   --SMARTBUFF_KIRUSSOV            = 46302; -- K'iru's Song of Victory
@@ -1676,7 +1677,7 @@ function SMARTBUFF_InitSpellList()
 
   -- Potions
   ---@type SpellList
-  SMARTBUFF_POTION = {
+  SMARTBUFF_FLASK = {
     {SMARTBUFF_ELIXIRTBC1, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIRTBC1},
     {SMARTBUFF_ELIXIRTBC2, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIRTBC2},
     {SMARTBUFF_ELIXIRTBC3, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIRTBC3},
