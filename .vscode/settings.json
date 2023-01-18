@@ -103,7 +103,8 @@
         "strsub",
         "parseInputString",
         "truthy",
-        "truthytostring"
+        "truthytostring",
+        "printw"
     ],
     "Lua.diagnostics.disable": [
         // "unused-function",

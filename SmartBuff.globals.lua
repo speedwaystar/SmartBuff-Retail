@@ -101,8 +101,8 @@ end
 ---Enum.Fish = Enum.MakeEnumFromTable(Fish)
 ---print(Enum.Fish.Herring) -- prints "3"
 ---```
-function Enum.MakeEnumFromTable(tbl)
-    return table.invert(tbl)
+function Enum.MakeEnumFromTable(t)
+    return table.invert(t)
 end
 
 Dict = {}
@@ -130,14 +130,21 @@ end
 ---Dict.Fish = Dict.MakeDictFromTable(Fish)
 ---print(Dict.Fish.Herring) -- prints "Herring"
 -- ```
----@param tbl integer[]
+---@param t integer[]
 ---@return table
-function Dict.MakeDictFromTable(tbl)
+function Dict.MakeDictFromTable(t)
 	local t = {};
-	for k, v in ipairs(tbl) do
+	for k, v in ipairs(t) do
 		t[v] = v;
 	end
 	return t;
+end
+
+---add reverse-lookup index pairs to table
+function table.transpose(t)
+  for i, v in pairs(t) do
+    t[v] = i
+  end
 end
 
 -- Returns a copy of `list` with `keys` and `values` inverted
@@ -270,4 +277,12 @@ function truthytostring(s)
   elseif type(s) == "number" then return s.."."
   elseif type(s) == "table" then dump(s) end
   return s
+end
+
+---@param b BuffInfo
+---@param ... ...
+function printw(b,...)
+  if string.match(string.lower(b.Name), string.lower(SMARTBUFF_OptionsGlobal.Watch or "none")) then
+    printd(...)
+  end
 end
