@@ -22,29 +22,31 @@ SMARTBUFF_CLASS_BUFFS = {};
 ---| "ITEMGROUP" # unused (perhaps items which buff party members, e.g. battle standards?)
 ---| "TOY" # toys (not iplemented yet, curently treated as SCROLLS)
 ---| "PET" # pet summons (not implented yet, currently treated as SELF)
-SMARTBUFF_CONST_ALL       = "ALL";        -- deprecated/not used
-SMARTBUFF_CONST_GROUP     = "GROUP";      -- SpellID, semicolon delimited targets string in BuffInfo.Targets
--- SMARTBUFF_CONST_GROUPALL  = "GROUPALL";   -- spellID, not currently used
-SMARTBUFF_CONST_SELF      = "SELF";       -- spellID, BuffInfo.Check contains conditions to check
-SMARTBUFF_CONST_FORCESELF = "FORCESELF";  -- spellID cast while shapeshifted
-SMARTBUFF_CONST_TRACK     = "TRACK";      -- SpellID = tracking skill
-SMARTBUFF_CONST_ENCHANT   = "ENCHANT";    -- spellID = spells which buff an InvSlot
-SMARTBUFF_CONST_WEAPONMOD = "WEAPONMOD";  -- itemID = items which buff INVSLOT_MAINHAND or INVSLOT_OFFHAND
-SMARTBUFF_CONST_MAINHAND  = "MAINHAND";   -- itemID = items which only buff INVSLOT_MAINHAND
-SMARTBUFF_CONST_FOOD      = "FOOD";       -- itemID = food
----CHECK i think SCROLL and POTION can be combined, unless one uses auras and the other doesn't?
-SMARTBUFF_CONST_SCROLL    = "SCROLL";     -- itemID = item without cooldown (scrolls, toys, augment runes)
-SMARTBUFF_CONST_FLASK     = "POTION";     -- itemID = item with cooldown (phials, potions)
-SMARTBUFF_CONST_STANCE    = "STANCE";     -- spellID = class stance
-SMARTBUFF_CONST_CONJURE   = "CONJURE";    -- spellID = conjure spell, b.AuraID = itemID (e.g. healthstones, mage food)
--- SMARTBUFF_CONST_ITEMGROUP = "ITEMGROUP";  -- itemID = items used on units. currently unused
--- toys are atm handled by a special case, so this constant isn't used (yet)
-SMARTBUFF_CONST_TOY       = "TOY";        -- toyID
-SMARTBUFF_CONST_PET       = "PET"         -- spellID = summon ability,
+---TODO: make the SMARTBUFF_CONST_ strings into an Enum
 
-Enum.SpellActionTypes = Enum.MakeEnum(SMARTBUFF_CONST_GROUP, SMARTBUFF_CONST_SELF, SMARTBUFF_CONST_FORCESELF, SMARTBUFF_CONST_ENCHANT, SMARTBUFF_CONST_STANCE, SMARTBUFF_CONST_CONJURE, SMARTBUFF_CONST_TRACK, SMARTBUFF_CONST_PET, SMARTBUFF_CONST_TOY )
+---@enum BuffType
+BuffType = Dict.MakeDict(
+  "SpellGroup",         -- spells which can target the player or group. BuffInfo.Targets contains semicolon delimited target strings
+  "SpellSelf",          -- spells which target the player (only). BuffInfo.Check contains conditions to check
+  "SpellForceSelf",     -- CHECK: cast while shapeshifted, currently only used by BARKSKIN
+  "SpellTrack",         -- tracking skill
+  "SpellEnchant",       -- spells which target an ItemInventorySlot
+  "ItemInventorySlot",  -- items which target an ItemInventorySlot
+  "ItemRangedWeapon",   -- items which don't target an ItemInventorySlot (e.g. automatically buff INVSLOT_RANGED/INVSLOT_MAINHAND)
+  "ItemFood",           -- food
+  "ItemWithCooldown",   -- items with cooldowns (potions)
+  "ItemNoCooldown",     -- items without cooldowns (scrolls, flasks, toys, augment runes)
+  "SpellStance",        -- class stances
+  "SpellConjuration",   -- spells which conjure inventory items (e.g. healthstones, mage food)
+  "ItemGroup",          -- CHECK: items which target the player or group members. currently not used.
+  "ItemToySelf",        -- toys which don't require a target
+  "ItemToyTargetted",   -- toys which require targets e.g. pet mirror
+  "SpellSummonPet"      -- spells which summon pets
+)
 
-Enum.ItemActionTypes = Enum.MakeEnum(SMARTBUFF_CONST_WEAPONMOD, SMARTBUFF_CONST_SCROLL, SMARTBUFF_CONST_FLASK, SMARTBUFF_CONST_FOOD)
+Enum.SpellActionTypes = Enum.MakeEnum(BuffType.SpellGroup, BuffType.SpellSelf, BuffType.SpellForceSelf, BuffType.SpellTrack, BuffType.SpellStance, BuffType.SpellConjuration, BuffType.SpellTrack, BuffType.SpellSummonPet, BuffType.ItemToySelf )
+
+Enum.ItemActionTypes = Enum.MakeEnum(BuffType.ItemInventorySlot, BuffType.ItemRangedWeapon, BuffType.ItemWithCooldown, BuffType.ItemNoCooldown, BuffType.ItemFood)
 
 ---@alias ActionType "spell"|"item"
 ACTION_TYPE_SPELL = "spell"
@@ -152,7 +154,7 @@ local function InsertSpell(t, type, spellID, auraID, duration, link)
 end
 
 local function AddItemScroll(itemId, spellId, duration, link)
-  InsertItem(SMARTBUFF_SCROLLS, SMARTBUFF_CONST_SCROLL, itemId, spellId, duration, link);
+  InsertItem(SMARTBUFF_SCROLLS, BuffType.ItemWithCooldown, itemId, spellId, duration, link);
 end
 
 local function LoadToys()
@@ -201,9 +203,6 @@ function SMARTBUFF_InitItemList()
 
   -- Weapon mods (stones, oils and runes)
   __Mods = {
-    SMARTBUFF_SafeRockets_1      = 198160; -- Completely Safe Rockets (Quality 1)
-    SMARTBUFF_SafeRockets_2      = 198161; -- Completely Safe Rockets (Quality 2)
-    SMARTBUFF_SafeRockets_3      = 198162; -- Completely Safe Rockets (Quality 3)
     SMARTBUFF_BuzzingRune_1      = 194817; -- Buzzing Rune (Quality 1)
     SMARTBUFF_BuzzingRune_2      = 194818; -- Buzzing Rune (Quality 2)
     SMARTBUFF_BuzzingRune_3      = 194819; -- Buzzing Rune (Quality 3)
@@ -224,7 +223,16 @@ function SMARTBUFF_InitItemList()
   ---@type SpellList
   SMARTBUFF_WEAPON_MODS = {}
   for _, id in pairs(__Mods) do
-    table.insert(SMARTBUFF_WEAPON_MODS, {id, 60, SMARTBUFF_CONST_WEAPONMOD})
+    table.insert(SMARTBUFF_WEAPON_MODS, {id, 60, BuffType.ItemInventorySlot})
+  end
+
+  SMARTBUFF_RANGED_MODS = {}
+  for _, id in pairs ( {
+    SMARTBUFF_SafeRockets_1      = 198160; -- Completely Safe Rockets (Quality 1)
+    SMARTBUFF_SafeRockets_2      = 198161; -- Completely Safe Rockets (Quality 2)
+    SMARTBUFF_SafeRockets_3      = 198162; -- Completely Safe Rockets (Quality 3)
+  } ) do
+    table.insert(SMARTBUFF_RANGED_MODS, {id, 60, BuffType.ItemRangedWeapon})
   end
 
   -- Food
@@ -247,7 +255,7 @@ function SMARTBUFF_InitItemList()
   ---@type SpellList
   SMARTBUFF_FOOD = {}
   for n, id in pairs(__Food) do
-    table.insert(SMARTBUFF_FOOD, {id, 60, SMARTBUFF_CONST_FOOD})
+    table.insert(SMARTBUFF_FOOD, {id, 60, BuffType.ItemFood})
   end
 
   -- Conjured mage food IDs
@@ -728,7 +736,7 @@ function SMARTBUFF_InitSpellIDs()
     SMARTBUFF_TRACKGIANTS         = 19882; -- Track Giants
     SMARTBUFF_TRACKDRAGONKIN      = 19879; -- Track Dragonkin
   }) do
-    table.insert(SMARTBUFF_TRACKING, {id, -1, SMARTBUFF_CONST_TRACK})
+    table.insert(SMARTBUFF_TRACKING, {id, -1, BuffType.SpellTrack})
   end
 
   ---@type SpellList
@@ -740,7 +748,7 @@ function SMARTBUFF_InitSpellIDs()
     SMARTBUFF_WillOfTheForsaken   = 7744;  -- Will of the Forsaken
     SMARTBUFF_WarStomp            = 20549; -- War Stomp
   }) do
-    table.insert(SMARTBUFF_RACIAL, {id, -1, SMARTBUFF_CONST_SELF})
+    table.insert(SMARTBUFF_RACIAL, {id, -1, BuffType.SpellSelf})
   end
 
   -- Food
@@ -1015,16 +1023,16 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "DRUID") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_DRUID_MOONKIN, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DRUID_TREANT, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DRUID_BEAR, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DRUID_CAT, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DRUID_TREE, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_MarkOfTheWild, 60, SMARTBUFF_CONST_GROUP, {1,10,20,30,40,50,60,70,80}, "HPET;WPET;DKPET"},
-      {SMARTBUFF_CENARION_WARD, 30/60, SMARTBUFF_CONST_GROUP, {1}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER"},
-      {SMARTBUFF_BARKSKIN, 8/60, SMARTBUFF_CONST_FORCESELF},
-      {SMARTBUFF_TIGERS_FURY, 10/60, SMARTBUFF_CONST_SELF, nil, SMARTBUFF_DRUID_CAT},
-      {SMARTBUFF_SAVAGE_ROAR, 9/60, SMARTBUFF_CONST_SELF, nil, SMARTBUFF_DRUID_CAT}
+      {SMARTBUFF_DRUID_MOONKIN, -1, BuffType.SpellSelf},
+      {SMARTBUFF_DRUID_TREANT, -1, BuffType.SpellSelf},
+      {SMARTBUFF_DRUID_BEAR, -1, BuffType.SpellSelf},
+      {SMARTBUFF_DRUID_CAT, -1, BuffType.SpellSelf},
+      {SMARTBUFF_DRUID_TREE, -1, BuffType.SpellSelf},
+      {SMARTBUFF_MarkOfTheWild, 60, BuffType.SpellGroup, {1,10,20,30,40,50,60,70,80}, "HPET;WPET;DKPET"},
+      {SMARTBUFF_CENARION_WARD, 30/60, BuffType.SpellGroup, {1}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER"},
+      {SMARTBUFF_BARKSKIN, 8/60, BuffType.SpellForceSelf},
+      {SMARTBUFF_TIGERS_FURY, 10/60, BuffType.SpellSelf, nil, SMARTBUFF_DRUID_CAT},
+      {SMARTBUFF_SAVAGE_ROAR, 9/60, BuffType.SpellSelf, nil, SMARTBUFF_DRUID_CAT}
     };
   end
 
@@ -1032,11 +1040,11 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "PRIEST") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_SHADOWFORM, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_PowerWordFortitude, 60, SMARTBUFF_CONST_GROUP, {14}, "HPET;WPET;DKPET", S.StamBuffAuras},
-      {SMARTBUFF_LEVITATE, 10, SMARTBUFF_CONST_GROUP, {34}, "HPET;WPET;DKPET"},
-      {SMARTBUFF_VAMPIRIC_EMBRACE, 15/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_POWER_WORD_SHIELD, 15/60, SMARTBUFF_CONST_GROUP, {6}, "MAGE;WARLOCK;ROGUE;PALADIN;WARRIOR;DRUID;ASPEC;SHAMAN;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_SHADOWFORM, -1, BuffType.SpellSelf},
+      {SMARTBUFF_PowerWordFortitude, 60, BuffType.SpellGroup, {14}, "HPET;WPET;DKPET", S.StamBuffAuras},
+      {SMARTBUFF_LEVITATE, 10, BuffType.SpellGroup, {34}, "HPET;WPET;DKPET"},
+      {SMARTBUFF_VAMPIRIC_EMBRACE, 15/60, BuffType.SpellSelf},
+      {SMARTBUFF_POWER_WORD_SHIELD, 15/60, BuffType.SpellGroup, {6}, "MAGE;WARLOCK;ROGUE;PALADIN;WARRIOR;DRUID;ASPEC;SHAMAN;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
       -- {SMARTBUFF_FEAR_WARD, 3, SMARTBUFF_CONST_GROUP, {54}, "HPET;WPET;DKPET"},
       -- {SMARTBUFF_CHAKRA1, 0.5, SMARTBUFF_CONST_SELF, nil, nil, S.LinkPriestChakra},
       -- {SMARTBUFF_CHAKRA2, 0.5, SMARTBUFF_CONST_SELF, nil, nil, S.LinkPriestChakra},
@@ -1048,27 +1056,27 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "MAGE") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_ArcaneIntellect, 60, SMARTBUFF_CONST_GROUP, {1,14,28,42,56,70,80}, nil, S.IntBuffAuras},
-      {SMARTBUFF_DalaranBrilliance, 60, SMARTBUFF_CONST_GROUP, {80,80,80,80,80,80,80}, nil, S.IntBuffAuras},
+      {SMARTBUFF_ArcaneIntellect, 60, BuffType.SpellGroup, {1,14,28,42,56,70,80}, nil, S.IntBuffAuras},
+      {SMARTBUFF_DalaranBrilliance, 60, BuffType.SpellGroup, {80,80,80,80,80,80,80}, nil, S.IntBuffAuras},
       -- {SMARTBUFF_TEMPORAL_SHIELD, 0.067, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_SUMMON_WATER_ELEMENTAL, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_FROST_ARMOR, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.MageArmorAuras},
+      {SMARTBUFF_SUMMON_WATER_ELEMENTAL, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_FROST_ARMOR, -1, BuffType.SpellSelf, nil, nil, nil, S.MageArmorAuras},
       -- {SMARTBUFF_MAGE_ARMOR, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.MageArmorAuras},
       -- {SMARTBUFF_MOLTEN_ARMOR, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.MageArmorAuras},
-      {SMARTBUFF_SLOWFALL, 0.5, SMARTBUFF_CONST_GROUP, {32}, "HPET;WPET;DKPET"},
+      {SMARTBUFF_SLOWFALL, 0.5, BuffType.SpellGroup, {32}, "HPET;WPET;DKPET"},
       -- {SMARTBUFF_MANA_SHIELD, 0.5, SMARTBUFF_CONST_SELF},
       -- {SMARTBUFF_ICEWARD, 0.5, SMARTBUFF_CONST_GROUP, {45}, "HPET;WPET;DKPET"},
-      {SMARTBUFF_ICE_BARRIER, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_COMBUSTION, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ICY_VEINS, 25/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ARCANE_FAMILIAR, 60, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
+      {SMARTBUFF_ICE_BARRIER, 1, BuffType.SpellSelf},
+      {SMARTBUFF_COMBUSTION, -1, BuffType.SpellSelf},
+      {SMARTBUFF_ICY_VEINS, 25/60, BuffType.SpellSelf},
+      {SMARTBUFF_ARCANE_FAMILIAR, 60, BuffType.SpellSelf, nil, S.CheckPet},
       -- {SMARTBUFF_ARCANE_POWER, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_PRESENCE_OF_MIND, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_PRISMATIC_BARRIER, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_IMPROVED_PRISMATIC_BARRIER, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BLAZING_BARRIER, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_CONJURE_REFRESHMENT, 0.03, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_MANA_BUNS, nil, S.ConjuredMageFood},
-      {SMARTBUFF_CONJURE_MANA_GEM, 0.03, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_MANA_GEM},
+      {SMARTBUFF_PRESENCE_OF_MIND, -1, BuffType.SpellSelf},
+      {SMARTBUFF_PRISMATIC_BARRIER, 1, BuffType.SpellSelf},
+      {SMARTBUFF_IMPROVED_PRISMATIC_BARRIER, 1, BuffType.SpellSelf},
+      {SMARTBUFF_BLAZING_BARRIER, 1, BuffType.SpellSelf},
+      {SMARTBUFF_CONJURE_REFRESHMENT, 0.03, BuffType.SpellConjuration, nil, SMARTBUFF_MANA_BUNS, nil, S.ConjuredMageFood},
+      {SMARTBUFF_CONJURE_MANA_GEM, 0.03, BuffType.SpellConjuration, nil, SMARTBUFF_MANA_GEM},
 --    {SMARTBUFF_ARCANEINTELLECT, 60, SMARTBUFF_CONST_GROUP, {32}, "HPET;WPET;DKPET"}
     };
   end
@@ -1078,27 +1086,27 @@ function SMARTBUFF_InitSpellList()
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
       -- {SMARTBUFF_DEMON_ARMOR, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AMPLIFY_CURSE, 15/60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_AMPLIFY_CURSE, 15/60, BuffType.SpellSelf},
       -- {SMARTBUFF_DARK_INTENT, 60, SMARTBUFF_CONST_GROUP, nil, "WARRIOR;ASPEC;ROGUE"},
-      {SMARTBUFF_SOUL_LINK, -1, SMARTBUFF_CONST_SELF, nil, S.CheckPetNeeded},
-      {SMARTBUFF_UNENDING_BREATH, 10, SMARTBUFF_CONST_GROUP, {16}, "HPET;WPET;DKPET"},
+      {SMARTBUFF_SOUL_LINK, -1, BuffType.SpellSelf, nil, S.CheckPetNeeded},
+      {SMARTBUFF_UNENDING_BREATH, 10, BuffType.SpellGroup, {16}, "HPET;WPET;DKPET"},
       -- {SMARTBUFF_LIFE_TAP, 0.025, SMARTBUFF_CONST_SELF},
       -- {SMARTBUFF_GRIMOIRE_OF_SACRIFICE, 60, SMARTBUFF_CONST_SELF, nil, S.CheckPetNeeded},
       -- {SMARTBUFF_BLOODHORROR, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_SOULSTONE, 15, SMARTBUFF_CONST_GROUP, {18}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;EVOKER;MONK;DEMONHUNTER;HPET;WPET;DKPET"},
-      {SMARTBUFF_CREATE_HEALTHSTONE, -1, SMARTBUFF_CONST_CONJURE, nil, SMARTBUFF_HEALTHSTONE},
-      {SMARTBUFF_SUMMON_IMP, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_FELHUNTER, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_VOIDWALKER, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_SUCCUBUS, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_INFERNAL, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_DOOMGUARD, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_FELGUARD, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_FELIMP, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_VOIDLORD, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_SHIVARRA, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_OBSERVER, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
-      {SMARTBUFF_SUMMON_WRATHGUARD, -1, SMARTBUFF_CONST_PET, nil, S.CheckPet},
+      {SMARTBUFF_SOULSTONE, 15, BuffType.SpellGroup, {18}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;EVOKER;MONK;DEMONHUNTER;HPET;WPET;DKPET"},
+      {SMARTBUFF_CREATE_HEALTHSTONE, -1, BuffType.SpellConjuration, nil, SMARTBUFF_HEALTHSTONE},
+      {SMARTBUFF_SUMMON_IMP, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_FELHUNTER, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_VOIDWALKER, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_SUCCUBUS, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_INFERNAL, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_DOOMGUARD, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_FELGUARD, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_FELIMP, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_VOIDLORD, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_SHIVARRA, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_OBSERVER, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
+      {SMARTBUFF_SUMMON_WRATHGUARD, -1, BuffType.SpellSummonPet, nil, S.CheckPet},
     };
   end
 
@@ -1106,16 +1114,16 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "HUNTER") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_AspectOfTheCheetah, -1, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
-      {SMARTBUFF_Camouflage, 1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_RapidFire, 1.7/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_Volley, 6/60, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AspectOfTheWild, 20/60, SMARTBUFF_CONST_SELF, nil, nil, S.HunterAspects},
-      {SMARTBUFF_CallPet1, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(1))) },
-      {SMARTBUFF_CallPet2, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(2))) },
-      {SMARTBUFF_CallPet3, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(3))) },
-      {SMARTBUFF_CallPet4, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(4))) },
-      {SMARTBUFF_CallPet5, -1, SMARTBUFF_CONST_PET, nil, (select(2, GetStablePetInfo(5))) },
+      {SMARTBUFF_AspectOfTheCheetah, -1, BuffType.SpellSelf, nil, nil, S.HunterAspects},
+      {SMARTBUFF_Camouflage, 1, BuffType.SpellSelf},
+      {SMARTBUFF_RapidFire, 1.7/60, BuffType.SpellSelf},
+      {SMARTBUFF_Volley, 6/60, BuffType.SpellSelf},
+      {SMARTBUFF_AspectOfTheWild, 20/60, BuffType.SpellSelf, nil, nil, S.HunterAspects},
+      {SMARTBUFF_CallPet1, -1, BuffType.SpellSummonPet, nil, (select(2, GetStablePetInfo(1))) },
+      {SMARTBUFF_CallPet2, -1, BuffType.SpellSummonPet, nil, (select(2, GetStablePetInfo(2))) },
+      {SMARTBUFF_CallPet3, -1, BuffType.SpellSummonPet, nil, (select(2, GetStablePetInfo(3))) },
+      {SMARTBUFF_CallPet4, -1, BuffType.SpellSummonPet, nil, (select(2, GetStablePetInfo(4))) },
+      {SMARTBUFF_CallPet5, -1, BuffType.SpellSummonPet, nil, (select(2, GetStablePetInfo(5))) },
     };
   end
 
@@ -1123,17 +1131,17 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "SHAMAN") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_LightningShield, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShamanShields},
-      {SMARTBUFF_WaterShield, 10, SMARTBUFF_CONST_SELF, nil, nil, S.ShamanShields},
-      {SMARTBUFF_EarthShield, 10, SMARTBUFF_CONST_GROUP, {50,60,70,75,80}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_WindfuryWeapon, 60, SMARTBUFF_CONST_ENCHANT},
-      {SMARTBUFF_FlametongueWeapon, 60, SMARTBUFF_CONST_ENCHANT},
+      {SMARTBUFF_LightningShield, 60, BuffType.SpellSelf, nil, nil, S.ShamanShields},
+      {SMARTBUFF_WaterShield, 10, BuffType.SpellSelf, nil, nil, S.ShamanShields},
+      {SMARTBUFF_EarthShield, 10, BuffType.SpellGroup, {50,60,70,75,80}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_WindfuryWeapon, 60, BuffType.SpellTrack},
+      {SMARTBUFF_FlametongueWeapon, 60, BuffType.SpellTrack},
       -- {SMARTBUFF_UNLEASHFLAME, 0.333, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AscendaneElemental, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AscendanceEnhancement, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AscendanceRestoration, 0.25, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ElementalMastery, 0.5, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_WaterWalking, 10, SMARTBUFF_CONST_GROUP, {28}}
+      {SMARTBUFF_AscendaneElemental, 0.25, BuffType.SpellSelf},
+      {SMARTBUFF_AscendanceEnhancement, 0.25, BuffType.SpellSelf},
+      {SMARTBUFF_AscendanceRestoration, 0.25, BuffType.SpellSelf},
+      {SMARTBUFF_ElementalMastery, 0.5, BuffType.SpellSelf},
+      {SMARTBUFF_WaterWalking, 10, BuffType.SpellGroup, {28}}
     };
   end
 
@@ -1141,12 +1149,12 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "WARRIOR") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_BattleShout, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras, S.ChainWarriorShout},
-      {SMARTBUFF_RallyingCry, 20, SMARTBUFF_CONST_SELF, nil, nil, S.StamBuffAuras, S.ChainWarriorShout},
-      {SMARTBUFF_BerserkerRage, 0.1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_ShieldBlock, 0.1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BattleStance, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
-      {SMARTBUFF_DefensiveStance, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainWarriorStance},
+      {SMARTBUFF_BattleShout, 60, BuffType.SpellSelf, nil, nil, S.ShoutBuffAuras, S.ChainWarriorShout},
+      {SMARTBUFF_RallyingCry, 20, BuffType.SpellSelf, nil, nil, S.StamBuffAuras, S.ChainWarriorShout},
+      {SMARTBUFF_BerserkerRage, 0.1, BuffType.SpellSelf},
+      {SMARTBUFF_ShieldBlock, 0.1, BuffType.SpellSelf},
+      {SMARTBUFF_BattleStance, -1, BuffType.SpellStance, nil, nil, nil, S.ChainWarriorStance},
+      {SMARTBUFF_DefensiveStance, -1, BuffType.SpellStance, nil, nil, nil, S.ChainWarriorStance},
     };
   end
 
@@ -1154,22 +1162,22 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "ROGUE") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_STEALTH, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BLADEFLURRY, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_SAD, 0.2, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_TRICKS, 0.5, SMARTBUFF_CONST_GROUP, {75}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_HUNGERFORBLOOD, 0.5, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_RECUPERATE, 0.5, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_EVASION, 0.2, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_INSTANTPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
-      {SMARTBUFF_DEADLYPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
-      {SMARTBUFF_WOUNDPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
+      {SMARTBUFF_STEALTH, -1, BuffType.SpellSelf},
+      {SMARTBUFF_BLADEFLURRY, -1, BuffType.SpellSelf},
+      {SMARTBUFF_SAD, 0.2, BuffType.SpellSelf},
+      {SMARTBUFF_TRICKS, 0.5, BuffType.SpellGroup, {75}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_HUNGERFORBLOOD, 0.5, BuffType.SpellSelf},
+      {SMARTBUFF_RECUPERATE, 0.5, BuffType.SpellSelf},
+      {SMARTBUFF_EVASION, 0.2, BuffType.SpellSelf},
+      {SMARTBUFF_INSTANTPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
+      {SMARTBUFF_DEADLYPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
+      {SMARTBUFF_WOUNDPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
       -- {SMARTBUFF_AGONIZINGPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsLethal},
-      {SMARTBUFF_LEECHINGPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
-      {SMARTBUFF_NUMBINGPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
-      {SMARTBUFF_CRIPPLINGPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
-      {SMARTBUFF_AMPLIFYPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
-      {SMARTBUFF_ATROPHICPOISON, 60, SMARTBUFF_CONST_SELF, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal}
+      {SMARTBUFF_LEECHINGPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
+      {SMARTBUFF_NUMBINGPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
+      {SMARTBUFF_CRIPPLINGPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
+      {SMARTBUFF_AMPLIFYPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal},
+      {SMARTBUFF_ATROPHICPOISON, 60, BuffType.SpellSelf, nil, S.CheckFishingPole, nil, S.ChainRoguePoisonsNonLethal}
     };
   end
 
@@ -1177,19 +1185,19 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "PALADIN") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_RighteousFury, 30, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_RighteousFury, 30, BuffType.SpellSelf},
       -- {SMARTBUFF_HOLYSHIELD, 0.166, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_AvengingWrath, 0.333, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_BlessingOfKings, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.StatBuffAuras},
+      {SMARTBUFF_AvengingWrath, 0.333, BuffType.SpellSelf},
+      {SMARTBUFF_BlessingOfKings, 60, BuffType.SpellGroup, {20}, nil, S.StatBuffAuras},
       -- {SMARTBUFF_BlessingOfMight, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.LinkMa},
-      {SMARTBUFF_BlessingOfWisdom, 60, SMARTBUFF_CONST_GROUP, {20}, nil, S.IntBuffAuras},
-      {SMARTBUFF_BlessingOfFreedom, 0.1, SMARTBUFF_CONST_GROUP, {52}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BlessingOfSalvation, 0.1, SMARTBUFF_CONST_GROUP, {66}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BeaconOfLight, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_BeaconOfFaith, 5, SMARTBUFF_CONST_GROUP, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
-      {SMARTBUFF_CrusaderAura, -1, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_DevotionAura, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
-      {SMARTBUFF_RetributionAura, -1, SMARTBUFF_CONST_SELF, nil, nil, nil, S.PaladinAuras},
+      {SMARTBUFF_BlessingOfWisdom, 60, BuffType.SpellGroup, {20}, nil, S.IntBuffAuras},
+      {SMARTBUFF_BlessingOfFreedom, 0.1, BuffType.SpellGroup, {52}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BlessingOfSalvation, 0.1, BuffType.SpellGroup, {66}, "WARRIOR;DEATHKNIGHT;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BeaconOfLight, 5, BuffType.SpellGroup, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_BeaconOfFaith, 5, BuffType.SpellGroup, {39}, "WARRIOR;DRUID;SHAMAN;HUNTER;ROGUE;MAGE;PRIEST;PALADIN;WARLOCK;DEATHKNIGHT;MONK;DEMONHUNTER;EVOKER;HPET;WPET;DKPET"},
+      {SMARTBUFF_CrusaderAura, -1, BuffType.SpellSelf},
+      {SMARTBUFF_DevotionAura, -1, BuffType.SpellSelf, nil, nil, nil, S.PaladinAuras},
+      {SMARTBUFF_RetributionAura, -1, BuffType.SpellSelf, nil, nil, nil, S.PaladinAuras},
       -- {SMARTBUFF_SOTRUTH, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainPaladinSeal},
       -- {SMARTBUFF_SealOfRighteousness, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
       -- {SMARTBUFF_SealOfJustice, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.PaladinSeals},
@@ -1202,14 +1210,14 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "DEATHKNIGHT") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_DANCING_RUNE_WEAPON, 0.2, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_DANCING_RUNE_WEAPON, 0.2, BuffType.SpellSelf},
       --{SMARTBUFF_BLOODPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
       --{SMARTBUFF_FROSTPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
       --{SMARTBUFF_UNHOLYPRESENCE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainDKPresence},
-      {SMARTBUFF_HornOfWinter, 60, SMARTBUFF_CONST_SELF, nil, nil, S.ShoutBuffAuras},
+      {SMARTBUFF_HornOfWinter, 60, BuffType.SpellSelf, nil, nil, S.ShoutBuffAuras},
       -- {SMARTBUFF_BONESHIELD, 5, SMARTBUFF_CONST_SELF},
-      {SMARTBUFF_RAISEDEAD, 1, SMARTBUFF_CONST_SELF, nil, S.CheckPet},
-      {SMARTBUFF_PathOfFrost, -1, SMARTBUFF_CONST_SELF}
+      {SMARTBUFF_RAISEDEAD, 1, BuffType.SpellSelf, nil, S.CheckPet},
+      {SMARTBUFF_PathOfFrost, -1, BuffType.SpellSelf}
     };
   end
 
@@ -1219,12 +1227,12 @@ function SMARTBUFF_InitSpellList()
     SMARTBUFF_CLASS_BUFFS = {
       --{SMARTBUFF_LOTWT, 60, SMARTBUFF_CONST_GROUP, {81}},
       --{SMARTBUFF_LOTE, 60, SMARTBUFF_CONST_GROUP, {22}, nil, S.LinkStats},
-      {SMARTBUFF_SOTFIERCETIGER, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainMonkStance},
-      {SMARTBUFF_SOTSTURDYOX, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainMonkStance},
+      {SMARTBUFF_SOTFIERCETIGER, -1, BuffType.SpellStance, nil, nil, nil, S.ChainMonkStance},
+      {SMARTBUFF_SOTSTURDYOX, -1, BuffType.SpellStance, nil, nil, nil, S.ChainMonkStance},
       --{SMARTBUFF_SOTWISESERPENT, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainMonkStance},
       --{SMARTBUFF_SOTPIRITEDCRANE, -1, SMARTBUFF_CONST_STANCE, nil, nil, nil, S.ChainMonkStance},
-      {SMARTBUFF_BLACKOX, 15, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainMonkStatue},
-      { SMARTBUFF_JADESERPENT, 15, SMARTBUFF_CONST_SELF, nil, nil, nil, S.ChainMonkStatue}
+      {SMARTBUFF_BLACKOX, 15, BuffType.SpellSelf, nil, nil, nil, S.ChainMonkStatue},
+      { SMARTBUFF_JADESERPENT, 15, BuffType.SpellSelf, nil, nil, nil, S.ChainMonkStatue}
     };
   end
 
@@ -1239,85 +1247,85 @@ function SMARTBUFF_InitSpellList()
   if (SMARTBUFF_PLAYERCLASS == "EVOKER") then
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
-      {SMARTBUFF_BRONZEBLESSING, 60, SMARTBUFF_CONST_SELF},
+      {SMARTBUFF_BRONZEBLESSING, 60, BuffType.SpellSelf},
     };
   end
 
     -- Scrolls
   ---@type SpellList
   SMARTBUFF_SCROLLS = {
-    {SMARTBUFF_MiscItem17, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem17, S.LinkFlaskLeg},
+    {SMARTBUFF_MiscItem17, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem17, S.LinkFlaskLeg},
 --    {SMARTBUFF_MiscItem16, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem16},
-    {SMARTBUFF_MiscItem15, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem14, S.LinkAugment},
-    {SMARTBUFF_MiscItem14, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem14, S.LinkAugment},
-    {SMARTBUFF_MiscItem13, 10, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem13},
-    {SMARTBUFF_MiscItem12, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem12},
-    {SMARTBUFF_MiscItem11, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem11, S.LinkFlaskWoD},
-    {SMARTBUFF_MiscItem10, -1, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem10, S.LinkSafariHat},
-    {SMARTBUFF_MiscItem9, -1, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem9, S.LinkSafariHat},
-    {SMARTBUFF_MiscItem1, -1, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem1},
-    {SMARTBUFF_MiscItem2, -1, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem2},
-    {SMARTBUFF_MiscItem3, 10, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem3},
-    {SMARTBUFF_MiscItem4, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem4, S.LinkFlaskMoP},
-    {SMARTBUFF_MiscItem5, 10, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem5},
-    {SMARTBUFF_MiscItem6, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem6},
-    {SMARTBUFF_MiscItem7, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem7},
+    {SMARTBUFF_MiscItem15, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem14, S.LinkAugment},
+    {SMARTBUFF_MiscItem14, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem14, S.LinkAugment},
+    {SMARTBUFF_MiscItem13, 10, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem13},
+    {SMARTBUFF_MiscItem12, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem12},
+    {SMARTBUFF_MiscItem11, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem11, S.LinkFlaskWoD},
+    {SMARTBUFF_MiscItem10, -1, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem10, S.LinkSafariHat},
+    {SMARTBUFF_MiscItem9, -1, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem9, S.LinkSafariHat},
+    {SMARTBUFF_MiscItem1, -1, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem1},
+    {SMARTBUFF_MiscItem2, -1, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem2},
+    {SMARTBUFF_MiscItem3, 10, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem3},
+    {SMARTBUFF_MiscItem4, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem4, S.LinkFlaskMoP},
+    {SMARTBUFF_MiscItem5, 10, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem5},
+    {SMARTBUFF_MiscItem6, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem6},
+    {SMARTBUFF_MiscItem7, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BMiscItem7},
     --{SMARTBUFF_MiscItem8, 5, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BMiscItem8},
-    {SMARTBUFF_AugmentRune, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BAugmentRune, S.LinkAugment},
-    {SMARTBUFF_VieledAugment, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BVieledAugment, S.LinkAugment},
+    {SMARTBUFF_AugmentRune, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BAugmentRune, S.LinkAugment},
+    {SMARTBUFF_VieledAugment, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BVieledAugment, S.LinkAugment},
 
-    {SMARTBUFF_SOAGILITY9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY8, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY7, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY6, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY5, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY4, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY3, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY2, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOAGILITY1, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBAGILITY},
-    {SMARTBUFF_SOINTELLECT9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT8, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT7, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT6, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT5, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT4, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT3, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT2, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOINTELLECT1, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBINTELLECT},
-    {SMARTBUFF_SOSTAMINA9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA8, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA7, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA6, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA5, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA4, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA3, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA2, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSTAMINA1, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTAMINA},
-    {SMARTBUFF_SOSPIRIT9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT8, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT7, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT6, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT5, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT4, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT3, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT2, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSPIRIT1, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSPIRIT},
-    {SMARTBUFF_SOSTRENGHT9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT8, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT7, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT6, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT5, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT4, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT3, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT2, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOSTRENGHT1, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBSTRENGHT},
-    {SMARTBUFF_SOPROTECTION9, 30, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_SBPROTECTION},
+    {SMARTBUFF_SOAGILITY9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY8, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY7, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY6, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY5, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY4, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY3, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY2, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOAGILITY1, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBAGILITY},
+    {SMARTBUFF_SOINTELLECT9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT8, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT7, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT6, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT5, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT4, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT3, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT2, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOINTELLECT1, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBINTELLECT},
+    {SMARTBUFF_SOSTAMINA9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA8, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA7, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA6, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA5, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA4, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA3, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA2, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSTAMINA1, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTAMINA},
+    {SMARTBUFF_SOSPIRIT9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT8, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT7, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT6, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT5, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT4, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT3, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT2, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSPIRIT1, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSPIRIT},
+    {SMARTBUFF_SOSTRENGHT9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT8, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT7, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT6, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT5, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT4, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT3, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT2, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOSTRENGHT1, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBSTRENGHT},
+    {SMARTBUFF_SOPROTECTION9, 30, BuffType.ItemWithCooldown, nil, SMARTBUFF_SBPROTECTION},
 
     -- Dragonflight
-    {SMARTBUFF_DraconicRune, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BDraconicRune, S.LinkAugment},
-    {SMARTBUFF_VantusRune_VotI_q1, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BVantusRune_VotI_q1},
-    {SMARTBUFF_VantusRune_VotI_q2, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BVantusRune_VotI_q2},
-    {SMARTBUFF_VantusRune_VotI_q3, 60, SMARTBUFF_CONST_SCROLL, nil, SMARTBUFF_BVantusRune_VotI_q3},
+    {SMARTBUFF_DraconicRune, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BDraconicRune, S.LinkAugment},
+    {SMARTBUFF_VantusRune_VotI_q1, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BVantusRune_VotI_q1},
+    {SMARTBUFF_VantusRune_VotI_q2, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BVantusRune_VotI_q2},
+    {SMARTBUFF_VantusRune_VotI_q3, 60, BuffType.ItemWithCooldown, nil, SMARTBUFF_BVantusRune_VotI_q3},
   };
 
   --      ItemID, SpellID, Duration [min]
@@ -1417,159 +1425,159 @@ function SMARTBUFF_InitSpellList()
   -- Potions
   ---@type SpellList
   SMARTBUFF_FLASKS = {
-    {SMARTBUFF_ELIXIRTBC1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC1},
-    {SMARTBUFF_ELIXIRTBC2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC2},
-    {SMARTBUFF_ELIXIRTBC3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC3},
-    {SMARTBUFF_ELIXIRTBC4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC4},
-    {SMARTBUFF_ELIXIRTBC5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC5},
-    {SMARTBUFF_ELIXIRTBC6, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC6},
-    {SMARTBUFF_ELIXIRTBC7, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC7},
-    {SMARTBUFF_ELIXIRTBC8, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC8},
-    {SMARTBUFF_ELIXIRTBC9, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC9},
-    {SMARTBUFF_ELIXIRTBC10, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC10},
-    {SMARTBUFF_ELIXIRTBC11, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC11},
-    {SMARTBUFF_ELIXIRTBC12, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC12},
-    {SMARTBUFF_ELIXIRTBC13, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC13},
-    {SMARTBUFF_ELIXIRTBC14, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC14},
-    {SMARTBUFF_ELIXIRTBC15, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC15},
-    {SMARTBUFF_ELIXIRTBC16, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC16},
-    {SMARTBUFF_ELIXIRTBC17, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRTBC17},
-    {SMARTBUFF_FLASKTBC1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKTBC1}, --, S.LinkFlaskTBC},
-    {SMARTBUFF_FLASKTBC2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKTBC2},
-    {SMARTBUFF_FLASKTBC3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKTBC3},
-    {SMARTBUFF_FLASKTBC4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKTBC4},
-    {SMARTBUFF_FLASKTBC5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKTBC5},
-    {SMARTBUFF_FLASKLEG1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKLEG1, S.LinkFlaskLeg},
-    {SMARTBUFF_FLASKLEG2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKLEG2},
-    {SMARTBUFF_FLASKLEG3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKLEG3},
-    {SMARTBUFF_FLASKLEG4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKLEG4},
-    {SMARTBUFF_FLASKWOD1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKWOD1, S.LinkFlaskWoD},
-    {SMARTBUFF_FLASKWOD2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKWOD2},
-    {SMARTBUFF_FLASKWOD3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKWOD3},
-    {SMARTBUFF_FLASKWOD4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKWOD4},
-    {SMARTBUFF_GRFLASKWOD1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKWOD1},
-    {SMARTBUFF_GRFLASKWOD2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKWOD2},
-    {SMARTBUFF_GRFLASKWOD3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKWOD3},
-    {SMARTBUFF_GRFLASKWOD4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKWOD4},
-    {SMARTBUFF_FLASKMOP1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP1, S.LinkFlaskMoP},
-    {SMARTBUFF_FLASKMOP2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP2},
-    {SMARTBUFF_FLASKMOP3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP3},
-    {SMARTBUFF_FLASKMOP4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP4},
-    {SMARTBUFF_FLASKMOP5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP5},
-    {SMARTBUFF_FLASKMOP6, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKMOP6},
-    {SMARTBUFF_ELIXIRMOP1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP1},
-    {SMARTBUFF_ELIXIRMOP2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP2},
-    {SMARTBUFF_ELIXIRMOP3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP3},
-    {SMARTBUFF_ELIXIRMOP4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP4},
-    {SMARTBUFF_ELIXIRMOP5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP5},
-    {SMARTBUFF_ELIXIRMOP6, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP6},
-    {SMARTBUFF_ELIXIRMOP7, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP7},
-    {SMARTBUFF_ELIXIRMOP8, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRMOP8},
-    {SMARTBUFF_EXP_POTION, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BEXP_POTION},
-    {SMARTBUFF_FLASKCT1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT1},
-    {SMARTBUFF_FLASKCT2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT2},
-    {SMARTBUFF_FLASKCT3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT3},
-    {SMARTBUFF_FLASKCT4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT4},
-    {SMARTBUFF_FLASKCT5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT5},
-    {SMARTBUFF_FLASKCT7, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKCT7, S.LinkFlaskCT7},
-    {SMARTBUFF_ELIXIRCT1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT1},
-    {SMARTBUFF_ELIXIRCT2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT2},
-    {SMARTBUFF_ELIXIRCT3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT3},
-    {SMARTBUFF_ELIXIRCT4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT4},
-    {SMARTBUFF_ELIXIRCT5, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT5},
-    {SMARTBUFF_ELIXIRCT6, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT6},
-    {SMARTBUFF_ELIXIRCT7, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT7},
-    {SMARTBUFF_ELIXIRCT8, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIRCT8},
-    {SMARTBUFF_FLASK1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASK1},
-    {SMARTBUFF_FLASK2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASK2},
-    {SMARTBUFF_FLASK3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASK3},
-    {SMARTBUFF_FLASK4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASK4},
-    {SMARTBUFF_ELIXIR1,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR1},
-    {SMARTBUFF_ELIXIR2,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR2},
-    {SMARTBUFF_ELIXIR3,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR3},
-    {SMARTBUFF_ELIXIR4,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR4},
-    {SMARTBUFF_ELIXIR5,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR5},
-    {SMARTBUFF_ELIXIR6,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR6},
-    {SMARTBUFF_ELIXIR7,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR7},
-    {SMARTBUFF_ELIXIR8,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR8},
-    {SMARTBUFF_ELIXIR9,  60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR9},
-    {SMARTBUFF_ELIXIR10, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR10},
-    {SMARTBUFF_ELIXIR11, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR11},
-    {SMARTBUFF_ELIXIR12, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR12},
-    {SMARTBUFF_ELIXIR13, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR13},
-    {SMARTBUFF_ELIXIR14, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR14},
+    {SMARTBUFF_ELIXIRTBC1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC1},
+    {SMARTBUFF_ELIXIRTBC2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC2},
+    {SMARTBUFF_ELIXIRTBC3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC3},
+    {SMARTBUFF_ELIXIRTBC4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC4},
+    {SMARTBUFF_ELIXIRTBC5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC5},
+    {SMARTBUFF_ELIXIRTBC6, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC6},
+    {SMARTBUFF_ELIXIRTBC7, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC7},
+    {SMARTBUFF_ELIXIRTBC8, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC8},
+    {SMARTBUFF_ELIXIRTBC9, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC9},
+    {SMARTBUFF_ELIXIRTBC10, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC10},
+    {SMARTBUFF_ELIXIRTBC11, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC11},
+    {SMARTBUFF_ELIXIRTBC12, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC12},
+    {SMARTBUFF_ELIXIRTBC13, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC13},
+    {SMARTBUFF_ELIXIRTBC14, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC14},
+    {SMARTBUFF_ELIXIRTBC15, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC15},
+    {SMARTBUFF_ELIXIRTBC16, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC16},
+    {SMARTBUFF_ELIXIRTBC17, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRTBC17},
+    {SMARTBUFF_FLASKTBC1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKTBC1}, --, S.LinkFlaskTBC},
+    {SMARTBUFF_FLASKTBC2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKTBC2},
+    {SMARTBUFF_FLASKTBC3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKTBC3},
+    {SMARTBUFF_FLASKTBC4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKTBC4},
+    {SMARTBUFF_FLASKTBC5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKTBC5},
+    {SMARTBUFF_FLASKLEG1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKLEG1, S.LinkFlaskLeg},
+    {SMARTBUFF_FLASKLEG2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKLEG2},
+    {SMARTBUFF_FLASKLEG3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKLEG3},
+    {SMARTBUFF_FLASKLEG4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKLEG4},
+    {SMARTBUFF_FLASKWOD1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKWOD1, S.LinkFlaskWoD},
+    {SMARTBUFF_FLASKWOD2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKWOD2},
+    {SMARTBUFF_FLASKWOD3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKWOD3},
+    {SMARTBUFF_FLASKWOD4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKWOD4},
+    {SMARTBUFF_GRFLASKWOD1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKWOD1},
+    {SMARTBUFF_GRFLASKWOD2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKWOD2},
+    {SMARTBUFF_GRFLASKWOD3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKWOD3},
+    {SMARTBUFF_GRFLASKWOD4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKWOD4},
+    {SMARTBUFF_FLASKMOP1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP1, S.LinkFlaskMoP},
+    {SMARTBUFF_FLASKMOP2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP2},
+    {SMARTBUFF_FLASKMOP3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP3},
+    {SMARTBUFF_FLASKMOP4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP4},
+    {SMARTBUFF_FLASKMOP5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP5},
+    {SMARTBUFF_FLASKMOP6, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKMOP6},
+    {SMARTBUFF_ELIXIRMOP1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP1},
+    {SMARTBUFF_ELIXIRMOP2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP2},
+    {SMARTBUFF_ELIXIRMOP3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP3},
+    {SMARTBUFF_ELIXIRMOP4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP4},
+    {SMARTBUFF_ELIXIRMOP5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP5},
+    {SMARTBUFF_ELIXIRMOP6, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP6},
+    {SMARTBUFF_ELIXIRMOP7, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP7},
+    {SMARTBUFF_ELIXIRMOP8, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRMOP8},
+    {SMARTBUFF_EXP_POTION, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BEXP_POTION},
+    {SMARTBUFF_FLASKCT1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT1},
+    {SMARTBUFF_FLASKCT2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT2},
+    {SMARTBUFF_FLASKCT3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT3},
+    {SMARTBUFF_FLASKCT4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT4},
+    {SMARTBUFF_FLASKCT5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT5},
+    {SMARTBUFF_FLASKCT7, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKCT7, S.LinkFlaskCT7},
+    {SMARTBUFF_ELIXIRCT1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT1},
+    {SMARTBUFF_ELIXIRCT2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT2},
+    {SMARTBUFF_ELIXIRCT3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT3},
+    {SMARTBUFF_ELIXIRCT4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT4},
+    {SMARTBUFF_ELIXIRCT5, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT5},
+    {SMARTBUFF_ELIXIRCT6, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT6},
+    {SMARTBUFF_ELIXIRCT7, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT7},
+    {SMARTBUFF_ELIXIRCT8, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIRCT8},
+    {SMARTBUFF_FLASK1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASK1},
+    {SMARTBUFF_FLASK2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASK2},
+    {SMARTBUFF_FLASK3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASK3},
+    {SMARTBUFF_FLASK4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASK4},
+    {SMARTBUFF_ELIXIR1,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR1},
+    {SMARTBUFF_ELIXIR2,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR2},
+    {SMARTBUFF_ELIXIR3,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR3},
+    {SMARTBUFF_ELIXIR4,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR4},
+    {SMARTBUFF_ELIXIR5,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR5},
+    {SMARTBUFF_ELIXIR6,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR6},
+    {SMARTBUFF_ELIXIR7,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR7},
+    {SMARTBUFF_ELIXIR8,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR8},
+    {SMARTBUFF_ELIXIR9,  60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR9},
+    {SMARTBUFF_ELIXIR10, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR10},
+    {SMARTBUFF_ELIXIR11, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR11},
+    {SMARTBUFF_ELIXIR12, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR12},
+    {SMARTBUFF_ELIXIR13, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR13},
+    {SMARTBUFF_ELIXIR14, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR14},
     -- {SMARTBUFF_ELIXIR15, 60, SMARTBUFF_CONST_POTION, nil, SMARTBUFF_BELIXIR15},
-    {SMARTBUFF_ELIXIR16, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BELIXIR16},
-    {SMARTBUFF_FLASKBFA1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKBFA1, S.LinkFlaskBfA},
-    {SMARTBUFF_FLASKBFA2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKBFA2},
-    {SMARTBUFF_FLASKBFA3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKBFA3},
-    {SMARTBUFF_FLASKBFA4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKBFA4},
-    {SMARTBUFF_GRFLASKBFA1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKBFA1},
-    {SMARTBUFF_GRFLASKBFA2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKBFA2},
-    {SMARTBUFF_GRFLASKBFA3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKBFA3},
-    {SMARTBUFF_GRFLASKBFA4, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BGRFLASKBFA4},
-    {SMARTBUFF_FLASKSL1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKSL1, S.LinkFlaskSL},
-    {SMARTBUFF_FLASKSL2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFLASKSL2},
+    {SMARTBUFF_ELIXIR16, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BELIXIR16},
+    {SMARTBUFF_FLASKBFA1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKBFA1, S.LinkFlaskBfA},
+    {SMARTBUFF_FLASKBFA2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKBFA2},
+    {SMARTBUFF_FLASKBFA3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKBFA3},
+    {SMARTBUFF_FLASKBFA4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKBFA4},
+    {SMARTBUFF_GRFLASKBFA1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKBFA1},
+    {SMARTBUFF_GRFLASKBFA2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKBFA2},
+    {SMARTBUFF_GRFLASKBFA3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKBFA3},
+    {SMARTBUFF_GRFLASKBFA4, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BGRFLASKBFA4},
+    {SMARTBUFF_FLASKSL1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKSL1, S.LinkFlaskSL},
+    {SMARTBUFF_FLASKSL2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFLASKSL2},
     -- Dragonflight
     -- consuming an identical phial will add another 30 min
     -- alchemist's flasks last twice as long
-    {SMARTBUFF_FlaskDF1_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF1_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF1_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF1_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF1_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF1_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF1, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF2_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF2_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF2_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF2_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF2_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF2_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF2, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF3_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF3_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF3_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF3_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF3_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF3_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF3, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF4_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF4_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF4_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF4_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF4_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF4_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF4, S.LinkFlaskDF},
 
 
-    {SMARTBUFF_FlaskDF5_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF5_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF5_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF5_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF5_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF5_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF5, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF6_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF6_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF6_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF6_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF6_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF6_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF6, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF7_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF7_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF7_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF7_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF7_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF7_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF7, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF8_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF8_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF8_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF8_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF8_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF8_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF8, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF9_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF9_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF9_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF9_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF9_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF9_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF9, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF10_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF10_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF10_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF10_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF10_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF10_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF10, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF11_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF11_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF11_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF11_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF11_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF11_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF11, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF12_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF12_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF12_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF12_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF12_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF12_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF12, S.LinkFlaskDF},
 
     -- the Elemental Chaos flask has 4 random effects changing every 60 seconds
-    {SMARTBUFF_FlaskDF13_q1, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF13_q2, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF13_q3, 60, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF13_q1, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF13_q2, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF13_q3, 60, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF13_1, S.LinkFlaskDF},
 
-    {SMARTBUFF_FlaskDF14_q1, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF14_q2, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
-    {SMARTBUFF_FlaskDF14_q3, 30, SMARTBUFF_CONST_FLASK, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF14_q1, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF14_q2, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
+    {SMARTBUFF_FlaskDF14_q3, 30, BuffType.ItemNoCooldown, nil, SMARTBUFF_BFlaskDF14, S.LinkFlaskDF},
 
   }
   SMARTBUFF_AddMsgD("Spell list initialized");

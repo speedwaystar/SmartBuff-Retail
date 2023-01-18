@@ -80,12 +80,12 @@ Enum.InventorySlot = {
 ---## Example
 ---```
 ---Enum.Animals = Enum.MakeEnum ( "Dog", "Cat", "Rabbit" )
----print( Enum.Animals.Cat ) -- prints "Cat"
+---print( Enum.Animals.Cat ) -- prints "3"
 ---```
 ---@param ... ...
 ---@return table
 function Enum.MakeEnum(...)
-  return tInvert({...})
+  return table.invert({...})
 	-- 	for i = 1, #t do
 	-- 		local v = t[i]
 	-- 		--t[i] = nil
@@ -99,21 +99,40 @@ end
 ---```
 ---Fish = { "Loach", "Pike", "Herring" }
 ---Enum.Fish = Enum.MakeEnumFromTable(Fish)
----print(Enum.Fish.Herring) -- prints "Herring"
+---print(Enum.Fish.Herring) -- prints "3"
 ---```
-function Enum.MakeEnumFromTable(t)
-    return tInvert(t)
+function Enum.MakeEnumFromTable(tbl)
+    return table.invert(tbl)
 end
 
+Dict = {}
 -- Returns a table `t` of self-indexed values
 -- ## Example
 -- ```lua
--- t = dict( "foo", "bar")
--- print(t.foo)  -- prints the string "foo"
+-- Dict.Animals = Dict.MakeDict ( "Dog", "Cat", "Rabbit" )
+---print( Dict.Animals.Cat ) -- prints "Cat"
 -- ```
----@param tbl table
+---@param ... ...
 ---@return table
-function Enum.MakeDict(tbl)
+function Dict.MakeDict(...)
+	local t = {};
+	for k, v in ipairs({...}) do
+		t[v] = v;
+	end
+	return t;
+end
+
+-- Returns a table `t` of self-indexed values from an existing array
+-- ## Example
+-- ```lua
+-- ```
+---Fish = { "Loach", "Pike", "Herring" }
+---Dict.Fish = Dict.MakeDictFromTable(Fish)
+---print(Dict.Fish.Herring) -- prints "Herring"
+-- ```
+---@param tbl integer[]
+---@return table
+function Dict.MakeDictFromTable(tbl)
 	local t = {};
 	for k, v in ipairs(tbl) do
 		t[v] = v;
