@@ -307,6 +307,7 @@ function SMARTBUFF_InitSpellIDs()
   SMARTBUFF_CREATE_HEALTHSTONE            = 6201;   -- Create Healthstone
   SMARTBUFF_SOULSTONE           = 20707;  -- Soulstone
   SMARTBUFF_GRIMOIRE_OF_SACRIFICE         = 108503; -- Grimoire of Sacrifice
+  SMARTBUFF_INQUISITORGAZE       = 386344; -- Inquisitor's Gaze
   --SMARTBUFF_BLOODHORROR         = 111397; -- Blood Horror
   -- Warlock pets
   SMARTBUFF_SUMMON_IMP           = 688;    -- Summon Imp
@@ -617,6 +618,7 @@ function SMARTBUFF_InitSpellList()
     SMARTBUFF_CLASS_BUFFS = {
       -- {SMARTBUFF_DEMON_ARMOR, -1, SMARTBUFF_CONST_SELF},
       {SMARTBUFF_AMPLIFY_CURSE, 15/60, Enum.Type.Spell},
+      {SMARTBUFF_INQUISITORGAZE, 60, Enum.Type.Spell},
       -- {SMARTBUFF_DARK_INTENT, 60, SMARTBUFF_CONST_GROUP, nil, "WARRIOR;ASPEC;ROGUE"},
       {SMARTBUFF_SOUL_LINK, -1, Enum.Type.Spell, nil, CheckPetNeeded},
       {SMARTBUFF_UNENDING_BREATH, 10, Enum.Type.GroupSpell, {16}, "HPET;WPET;DKPET"},
