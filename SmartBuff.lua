@@ -10,9 +10,8 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_DATE = "190123";
-
-SMARTBUFF_VERSION       = "r16alpha." .. SMARTBUFF_DATE;
+SMARTBUFF_VERSION       = "r17alpha."..SMARTBUFF_DATE;
+SMARTBUFF_DATE          = "200123 Dev";
 SMARTBUFF_VERSIONNR     = 100002;
 SMARTBUFF_TITLE         = "SmartBuff";
 SMARTBUFF_SUBTITLE      = "Supports you in casting buffs";
