@@ -25,7 +25,7 @@ local SmartbuffPrefix = "Smartbuff";
 local SmartbuffSession = true;
 local SmartbuffVerCheck = false; -- for my use when checking guild users/testers versions  :)
 local buildInfo = select(4, GetBuildInfo())
-local SmartbuffRevision = 16;
+local SmartbuffRevision = 17;
 local SmartbuffVerNotifyList = {}
 
 S = SMARTBUFF_GLOBALS;
