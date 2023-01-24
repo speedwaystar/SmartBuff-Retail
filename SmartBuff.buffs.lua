@@ -127,16 +127,14 @@ NIL = "x";
 Toybox = { };
 
 local function LoadToys()
+  printd("LoadToys")
 	C_ToyBox.SetCollectedShown(true)
 	C_ToyBox.SetAllSourceTypeFilters(true)
 	C_ToyBox.SetFilterString("")
-	local total = C_ToyBox.GetNumTotalDisplayedToys();
-	local learned = C_ToyBox.GetNumLearnedDisplayedToys() or 0;
-	if (learned <= 0) then return end
+	if ((C_ToyBox.GetNumLearnedDisplayedToys() or 0) == 0) then return end
 
-	for i = 1, total do
-		local num = C_ToyBox.GetToyFromIndex(i);
-		local id, name, icon = C_ToyBox.GetToyInfo(num);
+	for i = 1, C_ToyBox.GetNumTotalDisplayedToys() do
+		local id, name, icon = C_ToyBox.GetToyInfo(C_ToyBox.GetToyFromIndex(i));
 		if (id) then
 		  if (PlayerHasToy(id)) then
         _,name = GetItemInfo(id)
@@ -145,15 +143,6 @@ local function LoadToys()
 		end
 	end
 
-  for i = 1, total do
-    local num = C_ToyBox.GetToyFromIndex(i);
-    local id, _, icon = C_ToyBox.GetToyInfo(num);
-    if (id) then
-      if (PlayerHasToy(id)) then
-        Toybox[id] = {id, icon};
-      end
-    end
-  end
   SMARTBUFF_AddMsgD("Toys initialized");
 end
 

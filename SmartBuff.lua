@@ -2288,15 +2288,15 @@ end
 -- END SMARTASPECT_IsDebuffTex
 
 -- If item is in bags, return bag, slot, item count and icon
----@param buff BuffInfo
----@return integer stackCount
-function SMARTBUFF_ItemCount(buff)
-  local chain = buff.Items or { buff.BuffID }
+---@param b BuffInfo
+---@return integer stackCount returns -1 if item is a toy
+function SMARTBUFF_ItemCount(b)
+  local chain = b.Items or { b.BuffID }
   local count = 0;
   local icon = 0;
   if (SMARTBUFF_Options.IncludeToys) then
-    if (S.Toybox[buff.BuffID]) then
-      return -1;
+    if (Toybox[b.BuffID]) then
+       return -1;
     end
   end
   for bag = 0, NUM_BAG_FRAMES do
@@ -3187,6 +3187,7 @@ function SMARTBUFF_Options_OnLoad(self)
 end
 
 function SMARTBUFF_Options_OnShow()
+  printd("SMARTBUFF_Options_OnShow")
   -- Check if the options frame is out of screen area
   local top    = GetScreenHeight() - math.abs(SmartBuffOptionsFrame:GetTop());
   local bottom = GetScreenHeight() - math.abs(SmartBuffOptionsFrame:GetBottom());
