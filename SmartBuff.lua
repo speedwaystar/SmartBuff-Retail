@@ -10,15 +10,15 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_DATE          = "200123 Dev";
-SMARTBUFF_VERSION       = "r17alpha."..SMARTBUFF_DATE;
+SMARTBUFF_DATE          = "240123 Dev";
+SMARTBUFF_VERSION       = "r18alpha."..SMARTBUFF_DATE;
 SMARTBUFF_VERSIONNR     = 100002;
 SMARTBUFF_TITLE         = "SmartBuff";
 SMARTBUFF_SUBTITLE      = "Supports you in casting buffs";
 SMARTBUFF_DESC          = "Cast the most important buffs on you, your tanks, party/raid members/pets";
 SMARTBUFF_VERS_TITLE    = SMARTBUFF_TITLE .. " " .. SMARTBUFF_VERSION;
 SMARTBUFF_OPTIONS_TITLE = SMARTBUFF_VERS_TITLE .. " Retail ";
-local SmartbuffRevision = 17;
+local SmartbuffRevision = 18;
 
 -- addon name
 local SmartbuffPrefix = "Smartbuff";
