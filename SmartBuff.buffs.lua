@@ -403,6 +403,7 @@ function SMARTBUFF_InitSpellIDs()
 
   -- Evoker
   SMARTBUFF_BlessingOfTheBronze     = 364342;   -- Blessing of the Bronze
+  SMARTBUFF_Visage                  = 351239;   -- Visage
   -- Demon Hunter
 
   ---@type SpellList
@@ -683,6 +684,7 @@ function SMARTBUFF_InitSpellList()
     ---@type SpellList
     SMARTBUFF_CLASS_BUFFS = {
       {SMARTBUFF_BlessingOfTheBronze, 60, Enum.Type.Spell},
+      {SMARTBUFF_Visage, -1, Enum.Type.Spell},
     };
   end
 
