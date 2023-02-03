@@ -10,18 +10,21 @@
 ---@module "Libs/Broker_SmartBuff/Broker_SmartBuff.lua"
 ---@module "SmartBuff.xml"
 
-SMARTBUFF_DATE          = "030123 Dev";
-SMARTBUFF_VERSION       = "r20alpha."..SMARTBUFF_DATE;
-SMARTBUFF_VERSIONNR     = "0.0.1"
 SMARTBUFF_TITLE         = "SmartBuff";
+-- unnecessarily complicated versioning system: HASSHIN
+SmartbuffVersion        = "20.0.0-alpha.1+040123" -- -- https://semver.org/
+local _, _, SmartbuffVersionMajor, SmartbuffVersionMinor, SmartbuffVersionPatch, SmartbuffVersionPrerelease, SmartbuffVersionMetadata = string.find(SmartbuffVersion, "^(%d+)%.(%d+)%.(%d+)%-([%w%.]*)%+(.*)$")
+SmartbuffVersionMajor   = tonumber(SmartbuffVersionMajor);
+SmartbuffVersionMinor   = tonumber(SmartbuffVersionMinor);
+SmartbuffVersionPatch   = tonumber(SmartbuffVersionPatch);
+local SmartbuffRevision = SmartbuffVersionMajor + SmartbuffVersionMinor/100 + SmartbuffVersionPatch/10000
+SMARTBUFF_VERS_TITLE    = SMARTBUFF_TITLE .. " " .. SmartbuffVersion;
+SMARTBUFF_OPTIONS_TITLE = SMARTBUFF_VERS_TITLE .. " Retail ";
+
 SMARTBUFF_SUBTITLE      = "Supports you in casting buffs";
 SMARTBUFF_DESC          = "Cast the most important buffs on you, your tanks, party/raid members/pets";
-SMARTBUFF_VERS_TITLE    = SMARTBUFF_TITLE .. " " .. SMARTBUFF_VERSION;
-SMARTBUFF_OPTIONS_TITLE = SMARTBUFF_VERS_TITLE .. " Retail ";
-local SmartbuffRevision = 20;
 
 -- addon name
-local SmartbuffPrefix = "Smartbuff";
 local SmartbuffSession = true;
 local SmartbuffVerCheck = false; -- for my use when checking guild users/testers versions  :)
 local buildInfo = select(4, GetBuildInfo())
@@ -497,7 +500,7 @@ local function SendSmartbuffVersion(player, unit)
   end
   -- not announced, add the player and announce.
   table.insert(SmartbuffVerNotifyList, { player, unit, GetTime() })
-  C_ChatInfo.SendAddonMessage(SmartbuffPrefix, tostring(SmartbuffRevision), "WHISPER", player)
+  C_ChatInfo.SendAddonMessage(SMARTBUFF_TITLE, tostring(SmartbuffRevision), "WHISPER", player)
   SMARTBUFF_AddMsgD(string.format("%s was sent version instring.formation.", player))
 end
 
@@ -551,7 +554,7 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
 
   if ((event == "UNIT_NAME_UPDATE" and arg1 == "player") or event == "PLAYER_ENTERING_WORLD") then
     if IsInGuild() and event == "PLAYER_ENTERING_WORLD" then
-      C_ChatInfo.SendAddonMessage(SmartbuffPrefix, tostring(SmartbuffRevision), "GUILD")
+      C_ChatInfo.SendAddonMessage(SMARTBUFF_TITLE, tostring(SmartbuffRevision), "GUILD")
     end
     IsPlayer = true;
     if (event == "PLAYER_ENTERING_WORLD" and SmartBuff_Initialized and O.SmartBuff_Enabled) then
@@ -567,18 +570,18 @@ function SMARTBUFF_OnEvent(self, event, arg1, arg2, arg3, arg4, arg5)
 
   -- PLAYER_LOGIN
   if event == "PLAYER_LOGIN" then
-    local _ = C_ChatInfo.RegisterAddonMessagePrefix(SmartbuffPrefix)
+    local _ = C_ChatInfo.RegisterAddonMessagePrefix(SMARTBUFF_TITLE)
   end
 
   -- CHAT_MSG_ADDON
   if event == "CHAT_MSG_ADDON" then
-    if arg1 == SmartbuffPrefix then
+    if arg1 == SMARTBUFF_TITLE then
       -- its us.
       if arg2 then
         arg2 = tonumber(arg2)
         if arg2 > SmartbuffRevision and SmartbuffSession then
           DEFAULT_CHAT_FRAME:AddMessage(SMARTBUFF_MSG_NEWVER1 ..
-            SMARTBUFF_VERSION .. SMARTBUFF_MSG_NEWVER2 .. arg2 .. SMARTBUFF_MSG_NEWVER3)
+            SmartbuffVersion .. SMARTBUFF_MSG_NEWVER2 .. arg2 .. SMARTBUFF_MSG_NEWVER3)
           SmartbuffSession = false
         end
         if arg5 and arg5 ~= UnitName("player") and SmartbuffVerCheck then
@@ -2537,12 +2540,14 @@ function SMARTBUFF_Options_Init(self)
     end
   end
 
-  if (O.VersionNr == nil or O.VersionNr < SMARTBUFF_VERSIONNR) then
-    O.VersionNr = SMARTBUFF_VERSIONNR;
+  -- major version changes are backwards incompatible by definition, so trigger a RESET ALL
+  if (O.VersionNr == nil or O.VersionNr < SmartbuffVersionMajor) then
+    O.VersionNr = SmartbuffVersionMajor;
+    SMARTBUFF_ResetAll()
     SMARTBUFF_InitBuffList();
     InitBuffOrder(true);
-    SMARTBUFF_AddMsg("Upgraded SmartBuff to " .. SMARTBUFF_VERSION);
   end
+  SMARTBUFF_AddMsg("Upgraded SmartBuff to " .. SmartbuffVersion);
 
   if (SMARTBUFF_OptionsGlobal == nil) then SMARTBUFF_OptionsGlobal = {}; end
   OG = SMARTBUFF_OptionsGlobal  ;
@@ -2552,12 +2557,12 @@ function SMARTBUFF_Options_Init(self)
 
   SMARTBUFF_Splash_ChangeFont(Enum.State.STATE_START_BUFF);
   SMARTBUFF_BuffOrderReset();
-  if (OG.FirstStart ~= SMARTBUFF_VERSION) then
-    OG.FirstStart = SMARTBUFF_VERSION;
+  if (OG.FirstStart ~= SmartbuffVersion) then
+    OG.FirstStart = SmartbuffVersion;
     SMARTBUFF_OptionsFrame_Open(true);
 
     if (OG.Tutorial == nil) then
-      OG.Tutorial = SMARTBUFF_VERSIONNR;
+      OG.Tutorial = SmartbuffVersion;
       SMARTBUFF_ToggleTutorial();
     end
 
