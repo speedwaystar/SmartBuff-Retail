@@ -22,10 +22,10 @@ Enum.Type = {
 }
 
 -- do not require an item to cast
-Enum.SpellActionTypes = Enum.MakeEnum(Enum.Type.GroupSpell, Enum.Type.Spell, Enum.Type.ForceSelfSpell, Enum.Type.TrackingSkill, Enum.Type.ClassStance, Enum.Type.Conjure, Enum.Type.TrackingSkill, Enum.Type.PetSummon, Enum.Type.Toy )
+Enum.SpellActionTypes = Enum.MakeEnum(Enum.Type.GroupSpell, Enum.Type.Spell, Enum.Type.ForceSelfSpell, Enum.Type.TrackingSkill, Enum.Type.ClassStance, Enum.Type.Conjure, Enum.Type.TrackingSkill, Enum.Type.PetSummon)
 -- conjuration is
 -- do require an item to cast
-Enum.ItemActionTypes = Enum.MakeEnum(Enum.Type.WeaponMod, Enum.Type.RangedMod, Enum.Type.Item, Enum.Type.Food)
+Enum.ItemActionTypes = Enum.MakeEnum(Enum.Type.WeaponMod, Enum.Type.RangedMod, Enum.Type.Item, Enum.Type.Food, Enum.Type.Toy)
 
 ---@alias ActionType "spell"|"item"
 ACTION_TYPE_SPELL = "spell"
@@ -124,27 +124,6 @@ CheckPet = "CHECKPET";
 CheckPetNeeded = "CHECKPETNEEDED";
 CheckFishingPole = "CHECKFISHINGPOLE";
 NIL = "x";
-Toybox = { };
-
-local function LoadToys()
-  printd("LoadToys")
-	C_ToyBox.SetCollectedShown(true)
-	C_ToyBox.SetAllSourceTypeFilters(true)
-	C_ToyBox.SetFilterString("")
-	if ((C_ToyBox.GetNumLearnedDisplayedToys() or 0) == 0) then return end
-
-	for i = 1, C_ToyBox.GetNumTotalDisplayedToys() do
-		local id, name, icon = C_ToyBox.GetToyInfo(C_ToyBox.GetToyFromIndex(i));
-		if (id) then
-		  if (PlayerHasToy(id)) then
-        _,name = GetItemInfo(id)
-		    Toybox[tostring(name)] = {id, icon};
-		  end
-		end
-	end
-
-  SMARTBUFF_AddMsgD("Toys initialized");
-end
 
 ---Append all values in array `addedArray` to the end of `table`
 ---@param table table
@@ -229,9 +208,6 @@ function SMARTBUFF_InitItemList()
   FishingPole = 6256;   -- Fishing Pole
 
   SMARTBUFF_AddMsgD("Item list initialized");
-  -- i still want to load them regardless of the option to turn them off/hide them
-  -- so that my settings are preserved and loaded should i turn it back on.
-  LoadToys();
 end
 
 function SMARTBUFF_InitSpellIDs()

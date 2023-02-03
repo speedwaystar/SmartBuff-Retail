@@ -338,7 +338,7 @@ end
 ---@param buffID any
 ---@return BuffInfo
 local function GetBuffInfo(buffID)
-  return BuffList[BuffIndex[buffID]];
+  return BuffList[BuffIndex[buffID]] or {};
 end
 
 ---Returns Hyperlink from `spell ID`
@@ -1078,8 +1078,9 @@ function SMARTBUFF_InitBuffList()
     for _, buff in pairs(buffType) do
       b = SMARTBUFF_NewBuff(buff)
       if b.Type == Enum.Type.TrackingSkill and SMARTBUFF_IsTrackingKnown(b)
+      or b.Type == Enum.Type.Toy and PlayerHasToy(b.BuffID) and select(4, C_ToyBox.GetToyInfo(b.BuffID)) and O.IncludeToys
       or b.ActionType == ACTION_TYPE_SPELL and IsSpellKnownOrOverridesKnown(b.BuffID)
-      or b.ActionType == ACTION_TYPE_ITEM and SMARTBUFF_ItemCount(b) > 0 then
+      or b.ActionType == ACTION_TYPE_ITEM and SMARTBUFF_GetItemCount(b) > 0 then
         -- Buffs[b.BuffID] = b;
         -- BuffIndex[b.BuffID] = b.BuffID -- this should enable us to do away with BuffIndex
         BuffIndex[b.BuffID] = n
@@ -1766,7 +1767,7 @@ function SMARTBUFF_TryBuffUnit(b, target, subgroup, state, force)
     -- buff failstates
     [1]  = {["BUFF_DISABLED"]     = not template.IsEnabled},
     [2]  = {["SELF_ONLY_BUFF"]    = b.Type ~= Enum.Type.GroupSpell and not UnitIsUnit(b.Target, "player")},
-    [3]  = {["BUFF_ACTIVE"]       = (UnitIsPlayer(b.Target) and C_UnitAuras.GetPlayerAuraBySpellID(b.BuffID))
+    [3]  = {["BUFF_ACTIVE"]       = (UnitIsPlayer(b.Target) and C_UnitAuras.GetPlayerAuraBySpellID(b.AuraID or b.BuffID))
                                     or C_UnitAuras.GetAuraDataByAuraInstanceID(b.Target, b.BuffID)},
     [4]  = {["ON_COOLDOWN"]       = select(2,SMARTBUFF_GetCooldown(b)) > 0},
     [5]  = {["AURAS_ACTIVE"]      = SMARTBUFF_AreLinkedAurasActive(b)},
@@ -2287,34 +2288,18 @@ end
 
 -- END SMARTASPECT_IsDebuffTex
 
--- If item is in bags, return bag, slot, item count and icon
+-- Returns the count of items found in bags, or 1 if item is a known toy. if chained items are present, checks those instead
 ---@param b BuffInfo
----@return integer stackCount returns -1 if item is a toy
-function SMARTBUFF_ItemCount(b)
+---@return integer stackCount bag item count
+function SMARTBUFF_GetItemCount(b)
   local chain = b.Items or { b.BuffID }
   local count = 0;
-  local icon = 0;
-  if (SMARTBUFF_Options.IncludeToys) then
-    if (Toybox[b.BuffID]) then
-       return -1;
+    for i = 1, #chain, 1 do
+      count = count + GetItemCount(chain[i])
     end
-  end
-  for bag = 0, NUM_BAG_FRAMES do
-    for slot = 1, C_Container.GetContainerNumSlots(bag) do
-      local itemID = C_Container.GetContainerItemID(bag, slot);
-      for i = 1, #chain, 1 do
-        if chain[i] == itemID then
-          local containerInfo = C_Container.GetContainerItemInfo(bag, slot);
-          count = count + containerInfo.stackCount
-        end
-      end
-    end
-  end
   return count;
 end
-
 -- END Reagent functions
-
 
 -- checks if the player is inside a battlefield
 function SMARTBUFF_IsActiveBattlefield(zone)
@@ -2513,7 +2498,7 @@ function SMARTBUFF_Options_Init(self)
     IsParrot = true;
   end
 
-  SMARTBUFF_ItemCount({});
+  -- SMARTBUFF_ItemOrToyCount({});
 
   SMARTBUFF_AddMsg(SMARTBUFF_VERS_TITLE .. " " .. SMARTBUFF_MSG_LOADED, true);
   SMARTBUFF_AddMsg("/sbm - " .. SMARTBUFF_OFT_MENU, true);
@@ -3162,12 +3147,7 @@ function SmartBuff_BuffSetup_ToolTip(state)
   GameTooltip:ClearLines();
   local b = LastBuff
   if LastBuff.ActionType == ACTION_TYPE_ITEM then
-    local count = SMARTBUFF_ItemCount(b);
-    if count == -1 then -- Toy
-      GameTooltip:SetToyByItemID(b.BuffID);
-    else
       GameTooltip:SetHyperlink(b.Hyperlink);
-    end
   else
     if state == Enum.State.STATE_REBUFF_CHECK and b.BuffID then
       GameTooltip:SetHyperlink(b.Hyperlink)
@@ -3178,7 +3158,6 @@ function SmartBuff_BuffSetup_ToolTip(state)
   end
   GameTooltip:Show();
 end
-
 -- END SmartBuff options toggle
 
 
@@ -3187,7 +3166,6 @@ function SMARTBUFF_Options_OnLoad(self)
 end
 
 function SMARTBUFF_Options_OnShow()
-  printd("SMARTBUFF_Options_OnShow")
   -- Check if the options frame is out of screen area
   local top    = GetScreenHeight() - math.abs(SmartBuffOptionsFrame:GetTop());
   local bottom = GetScreenHeight() - math.abs(SmartBuffOptionsFrame:GetBottom());
@@ -3955,8 +3933,8 @@ local function CreateScrollButtons(self, cBtn, sBtnName, onClick, onDragStop)
   SetPosScrollButtons(self, cBtn);
 end
 
-local function OnScroll(self, cData, sBtnName)
-  local num = #cData;
+local function OnScroll(self, t, sBtnName)
+  local num = #t;
   local n, numToDisplay;
 
   if (num <= MaxScrollButtons) then
@@ -3966,7 +3944,7 @@ local function OnScroll(self, cData, sBtnName)
   end
 
   FauxScrollFrame_Update(self, num, math.floor(numToDisplay / 3 + 0.5), ScrLineHeight);
-  local t = B[CS()][CT()];
+  local b = B[CS()][CT()];
   for i = 1, MaxScrollButtons, 1 do
     n = i + FauxScrollFrame_GetOffset(self);
     local btn = _G[sBtnName .. i];
@@ -3974,8 +3952,8 @@ local function OnScroll(self, cData, sBtnName)
       if (n <= num) then
         btn:SetNormalFontObject("GameFontNormalSmall");
         btn:SetHighlightFontObject("GameFontHighlightSmall");
-        btn:SetText(IDToLink(cData[n]))
-        btn:SetChecked(t[cData[n]].IsEnabled);
+        btn:SetText(IDToLink(t[n]))
+        btn:SetChecked(b[t[n]].IsEnabled);
         btn:Show();
       else
         btn:Hide();
