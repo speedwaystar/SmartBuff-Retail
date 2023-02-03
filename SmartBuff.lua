@@ -2541,9 +2541,10 @@ function SMARTBUFF_Options_Init(self)
   end
 
   -- major version changes are backwards incompatible by definition, so trigger a RESET ALL
-  if (O.VersionNr == nil or O.VersionNr < SmartbuffVersionMajor) then
+  O.VersionNr = O.VersionNr or SmartbuffVersionMajor -- don't reset if O.VersionNr == nil
+  if O.VersionNr < SmartbuffVersionMajor then
     O.VersionNr = SmartbuffVersionMajor;
-    SMARTBUFF_ResetAll()
+    StaticPopup_Show("SMARTBUFF_DATA_PURGE");
     SMARTBUFF_InitBuffList();
     InitBuffOrder(true);
   end
