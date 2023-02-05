@@ -167,7 +167,6 @@ local Icons = {
 };
 
 -- available sounds (25)
----@type LSM
 local sharedMedia = LibStub:GetLibrary("LibSharedMedia-3.0")
 local Sounds = { 1141, 3784, 4574, 17318, 15262, 13830, 15273, 10042, 10720, 17316, 3337, 7894, 7914, 10033, 416, 57207, 78626, 49432, 10571, 58194, 21970, 17339, 84261, 43765}
 local soundTable = {
@@ -3775,7 +3774,7 @@ function SMARTBUFF_OnPreClick(self, button, isButtonDown)
           self:SetAttribute("item", b.Hyperlink);
           if b.InventorySlot > 0 then
             self:SetAttribute("type", "macro");
-            ---CHECK: can't use hyperlink in macro text
+            -- can't use hyperlink in item macro text
             self:SetAttribute("macrotext", string.format("/use %s\n/use %i\n/click StaticPopup1Button1", b.Name, b.InventorySlot));
           end
         else
