@@ -3315,7 +3315,7 @@ function SMARTBUFF_Options_OnHide()
   SMARTBUFF_SetInCombatBuffs();
   SmartBuff_BuffSetup:Hide();
   SmartBuff_PlayerSetup:Hide();
-  SMARTBUFF_SetTemplate();
+  -- SMARTBUFF_SetTemplate();
   SMARTBUFF_Splash_Hide();
   SMARTBUFF_RebindKeys();
   --collectgarbage();
